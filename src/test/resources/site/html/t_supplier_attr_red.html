@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Parameters</title>
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+
+<div class="container-fluid ">
+    <div class="row bg-primary">
+        <h2 class="text-dark text-center">Параметры поставщика</h2>
+    </div>
+
+    <div class="row ">
+        <nav class="nav">
+            <a class="nav-link link-primary" th:href="@{/}">Домашняя</a>
+            <a class="nav-link link-primary" th:href="@{/order}">Информация</a>
+            <a class="nav-link link-primary" th:href="@{/supplier}">Поставщики</a>
+        </nav>
+    </div>
+    <div class="row">
+        <nav class="nav border-top border-bottom border-success mt-4">
+            <a class="nav-link link-info" th:href="@{/supplier/dataUpdate}">Импорт и экспорт файлов</a>
+            <a class="nav-link link-info" th:href="@{/supplier/manufacturer}">Производители</a>
+            <a class="nav-link link-info" th:href="@{/supplier/attribute}">Аттрибуты</a>
+            <!--            <a class="nav-link link-info" th:href="@{/supplier/markup/category}">Наценка категорий</a>-->
+            <a class="nav-link link-info" th:href="@{/supplier/markup/manufacturer}">Наценка производителей</a>
+        </nav>
+    </div>
+
+    <div class="row justify-content-center">
+        <form class="row" style="max-width: 1000px">
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="inputPassword6" class="col-form-label">Такст аттрибута</label>
+                </div>
+                <div class="col-auto">
+                    <input type="password" id="inputPassword6" class="form-control"
+                           aria-describedby="passwordHelpInline">
+                </div>
+                <div class="col-auto">
+                <span id="passwordHelpInline" class="form-text">
+                  Тестк который нужно заменить
+                </span>
+                </div>
+            </div>
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="inputPassword6" class="col-form-label">Новый такст аттрибута</label>
+                </div>
+                <div class="col-auto">
+                    <input type="password" id="inputPassword6" class="form-control"
+                           aria-describedby="passwordHelpInline">
+                </div>
+                <div class="col-auto">
+                <span id="passwordHelpInline" class="form-text">
+                  Тестк на который нужно заменить
+                </span>
+                </div>
+            </div>
+
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="inputPassword6" class="col-form-label">Математический знак</label>
+                </div>
+                <div class="col-auto">
+                    <input type="password" id="inputPassword6" class="form-control"
+                           aria-describedby="passwordHelpInline">
+                </div>
+                <div class="col-auto">
+                <span id="passwordHelpInline" class="form-text">
+                  Выберите математическую операцию с числами
+                </span>
+                </div>
+            </div>
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="inputPassword6" class="col-form-label">Число для математичкской операции</label>
+                </div>
+                <div class="col-auto">
+                    <input type="password" id="inputPassword6" class="form-control"
+                           aria-describedby="passwordHelpInline">
+                </div>
+                <div class="col-auto">
+                <span id="passwordHelpInline" class="form-text">
+                  Целое положительное число
+                </span>
+                </div>
+            </div>
+
+
+            <div class="row g-3">
+                <div class="col"></div>
+                <button type="button" class="btn btn-primary m-lg-3" style="max-width: 200px">Обновить параметры</button>
+            </div>
+
+        </form>
+    </div>
+    <div class="row mb-5 mt-5"></div>
+    <div class="row fixed-bottom text-center bg-primary">
+        <h5>&copy centur</h5>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Parameters</title>
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+
+</head>
+<body class="bg-light">
+
+<div class="container-fluid mb-5">
+    <div class="row bg-primary">
+        <h2 class="text-dark text-center">Параметри постачальників Opencart<p th:text="${supplier.getName()}"></p></h2>
+    </div>
+
+    <div class="row">
+        <nav class="nav">
+            <a class="nav-link link-primary" th:href="@{/}">Домашня</a>
+            <a class="nav-link link-primary" th:href="@{/order}">Звіт парсингу</a>
+            <a class="nav-link link-primary" th:href="@{/supplier}">Дані постачальників</a>
+            <a class="nav-link link-primary" th:href="@{/supplieroc}">Дані постачальників Opencart</a>
+        </nav>
+    </div>
+    <div class="row">
+        <nav class="nav border-top border-bottom border-success mt-4">
+            <a class="nav-link link-info" th:href="@{/supplier/dataUpdate}">Імпорт та експорт файлів</a>
+            <a class="nav-link link-info" th:href="@{/supplier/manufacturer}">Виробники</a>
+            <a class="nav-link link-info" th:href="@{/supplier/attribute}">Атрибути</a>
+            <a class="nav-link link-info" th:href="@{/supplier/markup/manufacturer}">Націнка виробників</a>
+        </nav>
+    </div>
+
+    <h2 class="text-center">Націнка test</h2>
+    <form class="row p-3 gx-5 align-items-center mt-5 border border-primary justify-content-around"
+          method="post">
+
+        <div class="input-group">
+            <div class="col-1 h4 text-center">1</div>
+            <div class="col-3 h3 text-center">Supplier</div>
+            <select class="form-select" id="inputGroupSelect04" aria-label="Example select with button addon">
+                <option selected>Choose...</option>
+                <option value="1">One</option>
+                <option value="2">Two</option>
+                <option value="3">Three</option>
+            </select>
+            <button class="btn btn-outline-secondary" type="button">Button</button>
+        </div>
+    </form>
+    <div class="row mb-5 mt-5"></div>
+    <div class="row fixed-bottom text-center bg-primary">
+        <h5>&copy Centur</h5>
+    </div>
+</div>
+
+</body>
+</html>

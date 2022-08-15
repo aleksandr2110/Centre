@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="bg-light">
+
+<div class="container-fluid ">
+    <div class="row bg-primary">
+        <h2 class="text-dark text-center">Система керування товарами</h2>
+    </div>
+    <div class="row " sec:authorize="isAuthenticated()">
+          <span class="user_name col align-self-end">
+                        <form id="logoutForm" method="POST" th:action="@{/logout}">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                            <h4><span th:text="'Вытаю, ' + ${userApp.getUserFirstName()}"></span> | <a href="#"
+                                                                                                       onclick="document.forms['logoutForm'].submit()"
+                                                                                                       style="color: #0dcaf0">Вийти</a></h4>
+            </form>
+            </span>
+
+    </div>
+    <div class="row ">
+        <nav class="nav">
+            <a class="nav-link link-primary" th:href="@{/}">Домашня</a>
+            <a class="nav-link link-primary" th:href="@{/order}">Звіт парсингу</a>
+            <a class="nav-link link-primary" th:href="@{/supplier}">Дані постачальників</a>
+            <a class="nav-link link-primary" th:href="@{/supplieroc}">Дані постачальників Opencart</a>
+            <a class="nav-link link-primary" th:href="@{/opencart}">Дані Opencart</a>
+            <p sec:authorize="hasRole('ROLE_ADMIN')">
+                <a class="nav-link link-primary" th:href="@{/user}">Користувачі</a>
+            </p>
+        </nav>
+    </div>
+
+
+    <div class="row mb-5 mt-5">
+        <div class="user_add"><a th:href="@{/user/create}">Додати користувача</a></div>
+        <div class="user_container header">
+            <p class="user_list_count">№ п.п</p>
+            <p class="user_list_login">Логин</p>
+            <p class="user_list_name">Іьмя</p>
+            <p class="user_list_name">Пароль</p>
+            <p class="user_list_change">Редагувати</p>
+            <p class="user_list_remove">Видалити</p>
+        </div>
+        <div class="user_container" th:each="u, idx: ${users}">
+            <p class="user_list_count" th:text="${idx.index + 1}"></p>
+            <p class="user_list_login" th:text="${u.userLogin}"></p>
+            <p class="user_list_name" th:text="${u.userFirstName}"></p>
+            <p class="user_list_password" th:text="${u.userPassword}"></p>
+            <p class="user_list_change"><a th:href="@{'/user/update/' + ${u.userId}}">Редагувати</a></p>
+            <p class="user_list_remove"><a th:href="@{'/user/remove/' + ${u.userId}}">Видалити</a></p>
+        </div>
+    </div>
+    <div class="row fixed-bottom text-center bg-primary">
+        <h5>&copy centur</h5>
+    </div>
+</div>
+
+</body>
+</html>

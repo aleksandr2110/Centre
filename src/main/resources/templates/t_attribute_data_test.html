@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Parameters</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="bg-light">
+
+<div class="container-fluid ">
+    <div class="row bg-primary">
+        <h2 class="text-dark text-center">Система керування товарами</h2>
+    </div>
+    <div class="row " sec:authorize="isAuthenticated()">
+          <span class="user_name col align-self-end">
+                        <form id="logoutForm" method="POST" th:action="@{/logout}">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                            <h4><span th:text="'Вытаю, ' + ${userApp.getUserFirstName()}"></span> | <a href="#"
+                                                                                                       onclick="document.forms['logoutForm'].submit()"
+                                                                                                       style="color: #0dcaf0">Вийти</a></h4>
+            </form>
+            </span>
+
+    </div>
+    <div class="row ">
+        <nav class="nav">
+            <a class="nav-link link-primary" th:href="@{/}">Домашня</a>
+            <a class="nav-link link-primary" th:href="@{/order}">Звіт парсингу</a>
+            <a class="nav-link link-primary" th:href="@{/supplier}">Дані постачальників</a>
+            <a class="nav-link link-primary" th:href="@{/supplieroc}">Дані постачальників Opencart</a>
+            <a class="nav-link link-primary" th:href="@{/opencart}">Дані Opencart</a>
+            <p sec:authorize="hasRole('ROLE_ADMIN')">
+                <a class="nav-link link-primary" th:href="@{/user}">Користувачі</a>
+            </p>
+        </nav>
+    </div>
+
+    <div class="row justify-content-center">
+        <h3 th:text="${'Тест параметров аттрибута'}" class="row mt-5 mb-5"
+            style="max-width: 1000px"></h3>
+        <form class="row" style="max-width: 1000px"
+              th:action="@{/update/test/text/}"
+              th:object="${testarrt}"
+              method="get">
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="teplacementFrom" class="col-form-label">Текст атрибуту</label>
+                </div>
+                <div class="col-auto">
+                    <input th:value="${attr.getReplacementFrom()}" th:attr="name='replacementFrom'"
+                           class="form-control"
+                           aria-describedby="passwordHelpInline">
+                </div>
+                <div class="col-auto">
+                <span id="teplacementFrom" class="form-text">
+                 Тестк який потрібно замінити
+                </span>
+                </div>
+            </div>
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="teplacementTo" class="col-form-label">Новий такст аттрибуту</label>
+                </div>
+                <div class="col-auto">
+                    <input th:value="${attr.getReplacementTo()}" th:attr="name='replacementTo'"
+                           class="form-control"
+                           aria-describedby="passwordHelpInline">
+                </div>
+                <div class="col-auto">
+                <span id="teplacementTo" class="form-text">
+                 Тест на який потрібно замінити
+                </span>
+                </div>
+            </div>
+
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="mathSign" class="col-form-label">Математичний знак</label>
+                </div>
+                <div class="col-auto">
+
+                    <select th:field="*{mathSign}" class="form-select" aria-label="Default select example">
+                        <option value="" th:selected="${attr.getMathSign().equals('')}"></option>
+                        <option value="+" th:selected="${attr.getMathSign().equals('+')}">+</option>
+                        <option value="-" th:selected="${attr.getMathSign().equals('-')}">-</option>
+                        <option value="*" th:selected="${attr.getMathSign().equals('*')}">*</option>
+                        <option value="/" th:selected="${attr.getMathSign().equals('/')}">/</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                <span id="mathSign" class="form-text">
+                    Виберіть математичну операцію з числами
+                </span>
+                </div>
+            </div>
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="mathNumber" class="col-form-label">Число для математичної операції</label>
+                </div>
+                <div class="col-auto">
+                    <input th:value="${attr.getMathNumber()}" th:attr="name='mathNumber'"
+                           class="form-control"
+                           aria-describedby="passwordHelpInline">
+                </div>
+                <div class="col-auto">
+                <span id="mathNumber" class="form-text">
+              Ціле позитивне число
+                </span>
+                </div>
+            </div>
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="testtext" class="col-form-label">
+                        Рядок для тестування</label>
+                </div>
+                <div class="col-auto">
+                    <input th:value="${testtext}" th:attr="name='testtext'"
+                           class="form-control"
+                           aria-describedby="passwordHelpInline">
+                </div>
+                <div class="col-auto">
+                <span id="testtext" class="form-text">
+                    Введіть рядок для тестування вибраних параметрів
+                </span>
+                </div>
+            </div>
+            <div th:if="${result != null}" class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="result" class="col-form-label">Результат тестування</label>
+                </div>
+                <div class="col-auto">
+                <span id="result" class="form-text" th:text="${result}">
+                </span>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col"></div>
+                <button type="submit" class="btn btn-primary m-lg-3" style="max-width: 200px">Протестувати параметри
+                </button>
+            </div>
+        </form>
+
+
+    </div>
+    <div class="row mb-5 mt-5"></div>
+    <div class="row fixed-bottom text-center bg-primary">
+        <h5>&copy centur</h5>
+    </div>
+</div>
+
+</body>
+</html>

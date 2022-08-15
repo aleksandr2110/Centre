@@ -1,0 +1,8 @@
+POST https://tfb2b.com.ua/uk/inner/user/login
+Content-Type: application/json;charset=UTF-8
+User-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36
+
+{
+  "password": "MRI0JKRC",
+  "username": "centur1@ukr.net"
+}

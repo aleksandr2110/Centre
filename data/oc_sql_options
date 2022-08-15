@@ -1,0 +1,6 @@
+oc_option                         - Тип
+oc_option_description             - Название
+oc_option_value                   - ID опции и картинка
+oc_option_value_description       - Название значения опции
+oc_product_option                 - ID продукта и опции
+oc_product_option_value           - ID продукта, опции, продукт_опции, значение опции, Новая цена

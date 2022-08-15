@@ -1,2 +1,1 @@
-# centur
-Centur app
+# centurapp

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Parameters</title>
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+
+<div class="container-fluid mb-5">
+    <div class="row bg-primary">
+        <h2 class="text-dark text-center">Параметры поставщика<p th:text="${supplier.getName()}"></p></h2>
+    </div>
+
+    <div class="row">
+        <nav class="nav">
+            <a class="nav-link link-primary" th:href="@{/}">Домашняя</a>
+            <a class="nav-link link-primary" th:href="@{/order}">Информация</a>
+            <a class="nav-link link-primary" th:href="@{/supplier}">Поставщики</a>
+        </nav>
+    </div>
+    <div class="row">
+        <nav class="nav border-top border-bottom border-success mt-4 mb-4">
+            <a class="nav-link link-info" th:href="@{/supplier/dataUpdate}">Импорт и экспорт файлов</a>
+            <a class="nav-link link-info" th:href="@{/supplier/manufacturer}">Производители</a>
+            <a class="nav-link link-info" th:href="@{/supplier/attribute}">Аттрибуты</a>
+            <a class="nav-link link-info" th:href="@{/supplier/markup/category}">Наценка категорий</a>
+            <a class="nav-link link-info" th:href="@{/supplier/markup/manufacturer}">Наценка производителей</a>
+        </nav>
+    </div>
+
+    <h2 class="text-center">Наценка категорий поставщика</h2>
+
+
+    <form class="row p-3 gx-5 align-items-center mt-4 border border-primary justify-content-around"
+          th:action="@{/supplier/markup/category/{id}(id=${    .getSupplierAppId()})}"
+          th:object="${supplier}"
+          method="post">
+        <h5 class="col-1">1.</h5>
+        <h4 class="col-3">Gjcnfsdf </h4>
+
+
+        <input type="text"
+               th:class="${status == null || status == 0} ? 'col-1' : (${status != null && status == 1} ? 'col-1 text-success border border-success' : 'col-1 text-danger border border-danger')"
+               class="col-2" th:field="*{markup}" id="supplier" aria-describedby="emailHelp"
+               th:attr="value=${supplier.getMarkup()}">
+        <div class="form-text col-3"><p class="text-center">Установите цело число от -100 до 100.</p></div>
+       <button type="submit" class="btn btn-primary col-2">Обновить</button>
+    </form>
+
+    <div class="row fixed-bottom text-center bg-primary">
+        <h5>&copy Centur</h5>
+    </div>
+</div>
+
+</body>
+</html>
