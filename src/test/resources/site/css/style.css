@@ -1,0 +1,42 @@
+/*div {*/
+/*    border: 1px solid black;*/
+/*}*/
+html, body {
+    height: 100%;
+}
+
+.fill {
+    min-height: 100%;
+}
+
+.header {
+    background-color: gray;
+    padding: 10px;
+}
+
+.cust_text{
+    font-size: 18px;
+}
+
+/*.table {*/
+/*margin: 5px;*/
+/*padding: 6px 12px;*/
+/*background-color: #323539;*/
+/*}*/
+
+.row {
+    margin: 1px 0;
+}
+
+.table-head {
+    font-size: 1.2em;
+    margin-bottom: 8px;
+
+}
+
+.table .row {
+    background-color: #cfe2ff;
+}
+
+
+VEGA_steel_MPD_AL70_0.jpg

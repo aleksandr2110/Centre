@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="bg-light">
+
+<div class="container-fluid ">
+    <div class="row bg-primary">
+        <h2 class="text-dark text-center">Система керування товарами</h2>
+    </div>
+    <div class="row " sec:authorize="isAuthenticated()">
+          <span class="user_name col align-self-end">
+                        <form id="logoutForm" method="POST" th:action="@{/logout}">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                            <h4><span th:text="'Вытаю, ' + ${userApp.getUserFirstName()}"></span> | <a href="#"
+                                                                                                       onclick="document.forms['logoutForm'].submit()"
+                                                                                                       style="color: #0dcaf0">Вийти</a></h4>
+            </form>
+            </span>
+
+    </div>
+    <div class="row ">
+        <nav class="nav">
+            <a class="nav-link link-primary" th:href="@{/}">Домашня</a>
+            <a class="nav-link link-primary" th:href="@{/order}">Звіт парсингу</a>
+            <a class="nav-link link-primary" th:href="@{/supplier}">Дані постачальників</a>
+            <a class="nav-link link-primary" th:href="@{/supplieroc}">Дані постачальників Opencart</a>
+            <a class="nav-link link-primary" th:href="@{/opencart}">Дані Opencart</a>
+            <p sec:authorize="hasRole('ROLE_ADMIN')">
+                <a class="nav-link link-primary" th:href="@{/user}">Користувачі</a>
+            </p>
+        </nav>
+    </div>
+
+    <div class="row mb-5 mt-5 ">
+        <form th:action="@{/user/create}" method="post" class="form_login" th:object="${userReg}">
+            <div class="form_title">Додати користупача</div>
+            <p th:if="${#fields.hasErrors('userLogin')}" th:errorclass="error" th:errors="*{userLogin}" />
+            <label for="login_login">Логін</label>
+            <input type="text" name="userLogin" id="login_login">
+            <p th:if="${#fields.hasErrors('userFirstName')}" th:errorclass="error" th:errors="*{userFirstName}" />
+            <label for="login_name">Имья</label>
+            <input type="text" name="userFirstName" id="login_name">
+            <p th:if="${#fields.hasErrors('userPassword')}" th:errorclass="error" th:errors="*{userPassword}" />
+            <label for="pass_login">Пароль</label>
+            <input type="password" name="userPassword" id="pass_login">
+            <p th:if="${#fields.hasErrors('userPasswordConfirm')}" th:errorclass="error" th:errors="*{userPasswordConfirm}" />
+            <label for="pass_login">Підтвердить пароль</label>
+            <input type="password" name="userPasswordConfirm" id="pass_login_confirm">
+
+            <label for="role">Користувач</label>
+            <select th:field="*{role}" id="role">
+                <option th:value="'U'" th:text="Користувач"></option>
+                <option th:value="'A'" th:text="Адміністратор"></option>
+            </select>
+            <button type="submit">Зарееструвати</button>
+        </form>
+    </div>
+    <div class="row fixed-bottom text-center bg-primary">
+        <h5>&copy centur</h5>
+    </div>
+</div>
+
+</body>
+</html>
+

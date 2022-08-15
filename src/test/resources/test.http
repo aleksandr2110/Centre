@@ -1,0 +1,22 @@
+POST https://hator-m.com/index.php?route=extension/liveopencart/liveprice/price&product_id=25366&quantity=1
+accept: application/json, text/javascript, */*; q=0.01
+accept-encoding: gzip, deflate, br
+accept-language: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+content-type: application/x-www-form-urlencoded; charset=UTF-8
+cookie: language=ru-ru; currency=UAH; OCSESSID=3eb3b43e55d4da17e8e1df4c8d; _gid=GA1.2.1486847974.1657548494; oct_product_views=25366%2C18047%2C527%2C539%2C2268%2C693%2C16349%2C25349%2C479%2C235%2C855%2C858%2C21344%2C18126%2C25359; _ga_YK8VKR0270=GS1.1.1657548493.11.1.1657551882.0; _ga=GA1.1.75429955.1656126183
+origin: https://hator-m.com
+referer: https://hator-m.com/veshalka-sekcionnaja-buk-cvet
+user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36
+x-requested-with: XMLHttpRequest
+
+{
+ "product_id": 25366,
+"oct_byoneclick": 1,
+"option%5B5224%5D": 20340,
+"option%5B5225%5D": 20336,
+"quantity": 1,
+"product_id": 25366,
+"min_quantity": 1,
+"max_quantity": 6000,
+"name":""
+}

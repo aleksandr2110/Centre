@@ -1,0 +1,17 @@
+.sup_product_add {
+    display: grid;
+    grid-template-columns: 500px 500px;
+    justify-content: end;
+    align-content: center;
+    font-size: 1.2em;
+}
+
+.sup_product_add_result {
+    background-color: #0d6efd;
+    text-align: center;
+}
+
+.form_product_add {
+    background-color: #3dd5f3;
+    text-align: center;
+}

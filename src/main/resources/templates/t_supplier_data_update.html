@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Parameters</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="bg-light">
+
+<div class="container-fluid ">
+    <div class="row bg-primary">
+        <h2 class="text-dark text-center">Система керування товарами</h2>
+    </div>
+    <div class="row " sec:authorize="isAuthenticated()">
+          <span class="user_name col align-self-end">
+                        <form id="logoutForm" method="POST" th:action="@{/logout}">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                            <h4><span th:text="'Вытаю, ' + ${userApp.getUserFirstName()}"></span> | <a href="#"
+                                                                                                       onclick="document.forms['logoutForm'].submit()"
+                                                                                                       style="color: #0dcaf0">Вийти</a></h4>
+            </form>
+            </span>
+
+    </div>
+    <div class="row ">
+        <nav class="nav">
+            <a class="nav-link link-primary" th:href="@{/}">Домашня</a>
+            <a class="nav-link link-primary" th:href="@{/order}">Звіт парсингу</a>
+            <a class="nav-link link-primary" th:href="@{/supplier}">Дані постачальників</a>
+            <a class="nav-link link-primary" th:href="@{/supplieroc}">Дані постачальників Opencart</a>
+            <a class="nav-link link-primary" th:href="@{/opencart}">Дані Opencart</a>
+            <p sec:authorize="hasRole('ROLE_ADMIN')">
+                <a class="nav-link link-primary" th:href="@{/user}">Користувачі</a>
+            </p>
+        </nav>
+    </div>
+    <div class="row">
+        <nav class="nav">
+            <a class="nav-link link-primary"
+               th:href="@{/supplieroc/products/{id}(id=${supupd.getSupId()})}" >Товари постачальника</a>
+        </nav>
+    </div>
+    <div class="row justify-content-center">
+        <h3 th:text="${'Параметри поставщика: ' + supupd.getSupCode()}" class="row mt-5 mb-5"
+            style="max-width: 1000px"></h3>
+        <form class="row" style="max-width: 1000px"
+              th:action="@{/supplieroc/update}"
+              th:object="${supupd}"
+              method="post">
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="supCode" class="col-form-label">Код поставщика</label>
+                </div>
+                <div class="col-auto">
+                    <input th:value="${supupd.getSupCode()}" th:attr="name='supCode'"
+                           class="form-control"
+                           aria-describedby="passwordHelpInline">
+                </div>
+
+            </div>
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="name" class="col-form-label">Name ( название поля в таблице )</label>
+                </div>
+                <div class="col-auto">
+                    <input th:value="${supupd.getName()}" th:attr="name='name'"
+                           class="form-control"
+                           aria-describedby="passwordHelpInline">
+                </div>
+
+            </div>
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="isPdv" class="col-form-label">ПДВ</label>
+                </div>
+                <div class="col-auto">
+                    <input th:value="${supupd.getIsPdv()}" th:attr="name='isPdv'"
+                           class="form-control"
+                           aria-describedby="passwordHelpInline">
+                </div>
+            </div>
+
+
+            <div class="row g-3 align-items-center">
+                <div class="col-4">
+                    <label for="currency" class="col-form-label"
+                           th:text="${'Валюта. Текущая валюта : ' + supupd.getCurrency()}">Валюта ( Текущая валюта
+                        ) </label>
+                </div>
+                <div class="col-auto">
+
+                    <select th:field="*{currency}" class="form-select" aria-label="Default select example">
+                        <option th:each="c : ${supupd.getCurrencies()}"
+                                th:value="${c.getCode()}"
+                                th:selected="${supupd.getCurrency().equals(c.getCode())}"
+                                th:text="${c.getCode()}"></option>
+                    </select>
+                </div>
+            </div>
+
+
+            <div class="row g-3 align-items-start">
+                <div class="col-4">
+                    <label for="contacts" class="col-form-label">Контактные данные</label>
+                </div>
+                <div class="col-auto">
+                    <textarea rows="10" cols="50" class="form-control" aria-label="With textarea"
+                              th:text="${supupd.getContacts()}" th:attr="name='contacts'"></textarea>
+                    <!--                    <input type="text" th:value="${supupd.getContacts()}" th:attr="name='contacts'"-->
+                    <!--                           class="form-control"-->
+                    <!--                           aria-describedby="passwordHelpInline">-->
+                </div>
+            </div>
+            <input type="hidden" th:value="${supupd.getSupId()}" th:attr="name='supId'"/>
+
+
+            <div class="row g-3">
+                <div class="col"></div>
+                <button type="submit" class="btn btn-primary m-lg-3" style="max-width: 200px">
+                    Оновити параметри
+                </button>
+            </div>
+        </form>
+
+
+    </div>
+    <div class="row mb-5 mt-5"></div>
+    <div class="row fixed-bottom text-center bg-primary">
+        <h5>&copy centur</h5>
+    </div>
+</div>
+
+</body>
+</html>

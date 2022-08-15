@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Parameters</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="bg-light">
+
+<div class="container-fluid mb-5">
+    <div class="row bg-primary">
+        <h2 class="text-dark text-center">Система керування товарами</h2>
+    </div>
+    <div class="row " sec:authorize="isAuthenticated()">
+          <span class="user_name col align-self-end">
+                        <form id="logoutForm" method="POST" th:action="@{/logout}">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                            <h4><span th:text="'Вытаю, ' + ${userApp.getUserFirstName()}"></span> | <a href="#"
+                                                                                                       onclick="document.forms['logoutForm'].submit()"
+                                                                                                       style="color: #0dcaf0">Вийти</a></h4>
+            </form>
+            </span>
+
+    </div>
+    <div class="row ">
+        <nav class="nav">
+            <a class="nav-link link-primary" th:href="@{/}">Домашня</a>
+            <a class="nav-link link-primary" th:href="@{/order}">Звіт парсингу</a>
+            <a class="nav-link link-primary" th:href="@{/supplier}">Дані постачальників</a>
+            <a class="nav-link link-primary" th:href="@{/supplieroc}">Дані постачальників Opencart</a>
+            <a class="nav-link link-primary" th:href="@{/opencart}">Дані Opencart</a>
+            <p sec:authorize="hasRole('ROLE_ADMIN')">
+                <a class="nav-link link-primary" th:href="@{/user}">Користувачі</a>
+            </p>
+        </nav>
+    </div>
+    <h2 class="text-center" th:text="${'Продукти постачальника: ' + supCode}"></h2>
+
+    <div class="row mb-5 mt-5">
+        <div class="sup_product_add">
+            <div class="sup_product_add_result" th:text="${mess}"></div>
+            <form th:action="@{/supplieroc/product/add}" method="post" class="form_product_add">
+                <input type="text" hidden name="supCode" th:value="${supCode}">
+                <label for="productModel">Додати товар по моделі</label>
+                <input type="text" name="productModel" id="productModel">
+                <button type="submit">Додати</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-5 mt-5">
+        <div class="sup_product_container header">
+            <div class="sup_product_count">№ п.п</div>
+            <div class="sup_product_model">Модель</div>
+            <div class="sup_product_price">Цена</div>
+            <div class="sup_product_pdv">ПДВ</div>
+            <div class="sup_product_currency">Валюта</div>
+            <div class="sup_product_availability">Доступность</div>
+            <div class="sup_product_availability">Изменить</div>
+            <div class="sup_product_availability">Удалить</div>
+        </div>
+        <div class="sup_product_container" th:each="p, idx: ${products}">
+            <input type="text" hidden th:value="${p.getProductId()}">
+            <div class="sup_product_count" th:text="${idx.index + 1}">Count</div>
+            <div class="sup_product_model" th:text="${p.getModel()}">Model</div>
+            <div class="sup_product_price" th:text="${p.getPrice()}">Price</div>
+            <div class="sup_product_pdv" th:text="${p.getIsPdv()}">PDV</div>
+            <div class="sup_product_currency" th:text="${p.getCurrency()}">Currency</div>
+            <div class="sup_product_availability" th:text="${p.getAvailability()}"></div>
+            <div class="sup_product_update"><a
+                    th:href="@{/supplieroc/product/update/{supId}/{id}(supId=${supId}, id=${p.getProductId()})}">Изменить</a>
+            </div>
+            <div class="sup_product_remove"><a
+                    th:href="@{/supplieroc/product/remove/{supId}/{id}(supId=${supId}, id=${p.getProductId()})}">Удалить</a>
+            </div>
+        </div>
+    </div>
+    <div class="row fixed-bottom text-center bg-primary">
+        <h5>&copy Centur</h5>
+    </div>
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Parameters</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="bg-light">
+
+<div class="container-fluid mb-5">
+    <div class="row bg-primary">
+        <h2 class="text-dark text-center">Система керування товарами</h2>
+    </div>
+    <div class="row " sec:authorize="isAuthenticated()">
+          <span class="user_name col align-self-end">
+                        <form id="logoutForm" method="POST" th:action="@{/logout}">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                            <h4><span th:text="'Вытаю, ' + ${userApp.getUserFirstName()}"></span> | <a href="#"
+                                                                                                       onclick="document.forms['logoutForm'].submit()"
+                                                                                                       style="color: #0dcaf0">Вийти</a></h4>
+            </form>
+            </span>
+
+    </div>
+    <div class="row ">
+        <nav class="nav">
+            <a class="nav-link link-primary" th:href="@{/}">Домашня</a>
+            <a class="nav-link link-primary" th:href="@{/order}">Звіт парсингу</a>
+            <a class="nav-link link-primary" th:href="@{/supplier}">Дані постачальників</a>
+            <a class="nav-link link-primary" th:href="@{/supplieroc}">Дані постачальників Opencart</a>
+            <a class="nav-link link-primary" th:href="@{/opencart}">Дані Opencart</a>
+            <p sec:authorize="hasRole('ROLE_ADMIN')">
+                <a class="nav-link link-primary" th:href="@{/user}">Користувачі</a>
+            </p>
+        </nav>
+    </div>
+    <div class="row">
+        <nav class="nav border-top border-bottom border-success mt-4">
+            <a class="nav-link link-info" th:href="@{/supplier/file}">Імпорт та експорт файлів</a>
+            <a class="nav-link link-info" th:href="@{/supplier/manufacturer}">Виробники</a>
+            <a class="nav-link link-info" th:href="@{/supplier/attribute}">Атрибути</a>
+            <a class="nav-link link-info" th:href="@{/supplier/markup/manufacturer}">Націнка виробників</a>
+        </nav>
+    </div>
+    <form class="row p-3 gx-5 align-items-center border border-primary"
+          th:action="@{/update/file/product/{id}(id=${supplier.getSupplierAppId()})}"
+          th:object="${supplier}"
+          method="get">
+        <label class="col-5"><p class="text-lg-start">Вивантажити файл для оновлення продуктів</p></label>
+        <div class="col-1"></div>
+        <div class="col-4"></div>
+        <button type="submit" class="btn btn-primary col-2">Вивантажити</button>
+    </form>
+
+    <form class="row p-3 gx-5 align-items-center border border-primary" th:action="@{/update/file/product}"
+          enctype="multipart/form-data"
+          th:object="${supplier}"
+          method="post">
+        <label for="formFile" class="form-label col-4">Завантажити файл для оновлення продуктів</label>
+        <div class="col-3">
+            <tr th:if="${uploadEmpty != null}">
+                <p class="text-danger" th:text="${uploadEmpty}"></p>
+            </tr>
+            <tr th:if="${uploadFormat != null}">
+                <p class="text-danger" th:text="${uploadFormat}"></p>
+            </tr>
+            <tr th:if="${uploadResult != null}">
+                <p class="text-success" th:text="${uploadResult}"></p>
+            </tr>
+
+        </div>
+        <input class="col-3" type="file" id="formFile" name="file">
+        <button type="submit" class="btn btn-primary col-2">Завантажити</button>
+    </form>
+
+    <form class="row p-3 gx-5 align-items-center border border-primary"
+          th:action="@{/update/file/image/{id}(id=${supplier.getSupplierAppId()})}"
+          th:object="${supplier}"
+          method="get">
+        <label class="col-5"><p class="text-lg-start">Вивантажити зображення постачальника</p></label>
+        <div class="col-1"></div>
+        <div class="col-4"></div>
+        <button type="submit" class="btn btn-primary col-2">Вивантажити</button>
+    </form>
+
+    <form class="row p-3 gx-5 align-items-center border border-primary" th:action="@{/update/file/image}"
+          enctype="multipart/form-data"
+          th:object="${supplier}"
+          method="post">
+        <label for="formFileImage" class="form-label col-4">Завантажити картинки постачальника</label>
+        <div class="col-3">
+            <tr th:if="${uploadEmptyI != null}">
+                <p class="text-danger" th:text="${uploadEmptyI}"></p>
+            </tr>
+            <tr th:if="${uploadFormatI != null}">
+                <p class="text-danger" th:text="${uploadFormatI}"></p>
+            </tr>
+            <tr th:if="${uploadResultI != null}">
+                <p class="text-success" th:text="${uploadResultI}"></p>
+            </tr>
+
+        </div>
+        <input class="col-3" type="file" id="formFileImage" name="file">
+        <button type="submit" class="btn btn-primary col-2">Загрузить</button>
+    </form>
+
+
+</div>
+<div class="row mb-5 mt-5"></div>
+<div class="row fixed-bottom text-center bg-primary">
+    <h5>&copy Centur</h5>
+</div>
+</div>
+
+</body>
+</html>

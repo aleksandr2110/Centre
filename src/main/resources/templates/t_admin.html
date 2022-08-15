@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="bg-light">
+
+
+
+<div class="container-fluid ">
+    <div class="row bg-primary">
+        <h2 class="text-dark text-center">Система управления товарами</h2>
+    </div>
+    <div class="row " sec:authorize="hasRole('ADMIN')">
+          <span class="user_name col align-self-end" sec:authorize="isAuthenticated()">
+                        <form id="logoutForm" method="POST" th:action="@{/logout}">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                            <h4><span th:text="'Вытаю, ' + ${userApp.getUserFirstName()}"></span> | <a href="#"
+                                                                                                       onclick="document.forms['logoutForm'].submit()" style="color: #0dcaf0">Вийти</a></h4>
+            </form>
+            </span>
+
+    </div>
+    <div class="row ">
+        <nav class="nav">
+            <a class="nav-link link-primary" th:href="@{/}">Домашняя</a>
+            <a class="nav-link link-primary" th:href="@{/order}">Информация</a>
+            <a class="nav-link link-primary" th:href="@{/supplier}">Поставщики</a>
+        </nav>
+    </div>
+    <ul class="nav nav-pills">
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/block/parsing}">Запуск парсинга</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/block/category}">Перезапись категорий</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/image}">Обновить картинки</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/desc}">Удалить HTML с описания</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/fulldesc}">Перепарсить описание</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/deleteproduct}">Удалить продукты поставщиков</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/pso}">Обновить ProductSupplier</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/model}">Обновить Model</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/newmodel}">Обновить новые Model</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/transgood}">Перевести гуд фуд</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/rp/image}">Загрузить картинки PR</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/google}">GOOGLE</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/imgupd}">RP MAIN IMG</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/transrp}">Перевести RP</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link " th:href="@{/admin/block/attrapp/value}">UpdaTE ATTRIBUTE VALUES</a>
+        </li>
+    </ul>
+    <div class="row mb-5 mt-5"></div>
+    <div class="row fixed-bottom text-center bg-primary">
+        <h5>&copy centur</h5>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script>
+        function replace(element) {
+            var tmp = element.value;
+            tmp = tmp.replace(/[^0-9,.]/g, "");
+            if (tmp.length === 0) {
+                tmp = '0';
+            }
+            tmp = tmp.replace(/,/, ".");
+            element.value = tmp;
+        }
+    </script>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid ">
+    <div class="row bg-primary">
+        <h2 class="text-dark text-center">Система керування товарами</h2>
+    </div>
+    <div class="row " sec:authorize="isAuthenticated()">
+          <span class="user_name col align-self-end">
+                        <form id="logoutForm" method="POST" th:action="@{/logout}">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                            <h4><span th:text="'Вытаю, ' + ${userApp.getUserFirstName()}"></span> | <a href="#"
+                                                                                                       onclick="document.forms['logoutForm'].submit()"
+                                                                                                       style="color: #0dcaf0">Вийти</a></h4>
+            </form>
+            </span>
+
+    </div>
+    <div class="row ">
+        <nav class="nav">
+            <a class="nav-link link-primary" th:href="@{/}">Домашня</a>
+            <a class="nav-link link-primary" th:href="@{/order}">Звіт парсингу</a>
+            <a class="nav-link link-primary" th:href="@{/supplier}">Дані постачальників</a>
+            <a class="nav-link link-primary" th:href="@{/supplieroc}">Дані постачальників Opencart</a>
+            <a class="nav-link link-primary" th:href="@{/opencart}">Дані Opencart</a>
+            <p sec:authorize="hasRole('ROLE_ADMIN')">
+                <a class="nav-link link-primary" th:href="@{/user}">Користувачі</a>
+            </p>
+        </nav>
+    </div>
+
+    <div class="row mb-5 mt-5 ">
+        <form th:action="@{/supplieroc/product/update}" method="post" class="form_login" th:object="${product}">
+            <div class="form_title">Редагувати</div>
+
+            <input type="text" name="productId" hidden th:value="${product.getProductId()}">
+
+            <label for="product_supplier_sup_code">Код постачальника</label>
+            <input type="text" th:field="*{supCode}" id="product_supplier_sup_code" th:readonly="true"
+                   th:value="${product.getSupCode()}">
+
+            <label for="product_supplier_model">Модель</label>
+            <input type="text" th:field="*{model}" id="product_supplier_model" th:value="${product.getModel()}"
+                   th:readonly="true">
+
+
+            <label for="product_supplier_price">Ціна</label>
+            <input type="text" name="price" onblur="replace(this)" id="product_supplier_price"
+                   th:value="${product.getPrice()}">
+
+            <label for="product_supplier_is_pdv">ПДВ</label>
+            <input type="text" name="isPdv" id="product_supplier_is_pdv" th:value="${product.isPdv}">
+
+            <label for="product_supplier_currency">Валюта</label>
+            <input type="text" name="currency" id="product_supplier_currency" maxlength="3"
+                   th:value="${product.getCurrency()}">
+
+            <label for="product_supplier_availability">Доступність</label>
+            <textarea cols="100" th:field="*{availability}" max="64" id="product_supplier_availability"
+                      th:text="${product.getAvailability()}"></textarea>
+
+            <button type="submit">Змінити</button>
+        </form>
+    </div>
+    <div class="row fixed-bottom text-center bg-primary">
+        <h5>&copy centur</h5>
+    </div>
+</div>
+
+</body>
+</html>
+
