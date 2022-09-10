@@ -33,6 +33,8 @@ public class ManagerService {
     private final ParserServiceTechsnab parserServiceTechsnab;
     private final ParserServiceNoveen parserServiceNoveen;
     private final ParserServiceUhlmash parserServiceUhlmash;
+    private final ParserServiceKirovogradvesy parserServiceKirovogradvesy;
+    private final ParserServiceVivat parserServiceVivat;
 
 
     public void updateNewModel() {
@@ -97,16 +99,22 @@ public class ManagerService {
         log.info("Threat is demon");
     }
 
+    public void updateImageHator() {
+        new Thread(parserServiceHator::updateImages).start();
+    }
+
     public void processApp() {
         new Thread(() -> {
             while (true) {
                 try {
                     log.info("Start global process");
+                    parserServiceRP.doProcess();
+                    parserServiceHator.doProcess();
+                    parserServiceKirovogradvesy.doProcess();
                     parserServiceUhlmash.doProcess();
                     parserServiceTechsnab.doProcess();
-                    parserServiceHator.doProcess();
                     parserServiceNoveen.doProcess();
-                    parserServiceRP.doProcess();
+
                     parserServiceGoodfood.doProcess();
                     parserServiceArtinhead.doProcess();
                     parserServiceAstim.doProcess();
@@ -117,7 +125,7 @@ public class ManagerService {
                     parserServiceSector.doProcess();
                     parserServiceTfb2b.doProcess();
                     log.info("End global process");
-                    TimeUnit.HOURS.sleep(22);
+                    TimeUnit.HOURS.sleep(10);
                 } catch (Exception e) {
                     log.warn("Exception main process", e);
                 }
@@ -155,6 +163,9 @@ public class ManagerService {
         }).start();
 
     }
+
+
+
 
     public void updateDescriptioKodki() {
         new Thread(() -> {
@@ -197,6 +208,24 @@ public class ManagerService {
             }
         }).start();
         log.info("Threat is demon");
+    }
+
+
+    public void importVivat() {
+        new Thread(() -> {
+            try {
+                log.info("Start ASTIM desc update");
+                parserServiceVivat.doProcess();
+                log.info("End ASTIM desc update");
+            } catch (Exception e) {
+                log.warn("Exception main process", e);
+            }
+        }).start();
+        log.info("Threat is demon");
+    }
+
+    public void delDupli() {
+        parserServiceHator.dataDuplicateProduct();
     }
 
 

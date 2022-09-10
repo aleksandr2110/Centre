@@ -36,6 +36,8 @@ class ProductOpencartDaoTest {
         log.info("Id product: {}", id);
     }
 
+
+
     @Test
     void getModels() {
         List<ProductInfoDto> allModelByAttributeId = productOpencartDao.getAllModelByAttributeId(2554);

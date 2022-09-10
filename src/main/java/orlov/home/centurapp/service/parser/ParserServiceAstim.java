@@ -69,10 +69,13 @@ public class ParserServiceAstim extends ParserServiceAbstract {
 
             List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
 
+
             OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
 
 
             supplierApp.setSiteCategories(siteCategories);
+
+
             List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
 
             checkPrice(opencartInfo, supplierApp);
@@ -95,7 +98,6 @@ public class ParserServiceAstim extends ParserServiceAbstract {
     }
 
 
-    //    TODO test attribute value update
     public void updateAttributeValue() {
         SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
         List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);

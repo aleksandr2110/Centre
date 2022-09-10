@@ -28,6 +28,7 @@ public class ProductOptionValueOpencart {
     private String rewardPrefix = OCConstant.PLUS_SIGN;
     private String optsku = OCConstant.EMPTY_STRING;
 
+
     @Override
     public String toString() {
         return "\tProductOptionValueOpencart{" + "\n" +

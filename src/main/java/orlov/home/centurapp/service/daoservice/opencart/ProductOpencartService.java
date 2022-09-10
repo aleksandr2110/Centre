@@ -65,6 +65,14 @@ public class ProductOpencartService {
 
     }
 
+    public void deleteProductOptionValue(int productId, int optionId, int optionValueId) {
+        productOptionValueDao.deleteProductOptionValue(productId, optionId, optionValueId);
+    }
+
+    public void deleteProductOption(int productId, int optionId) {
+        productOptionDao.deleteProductOption(productId, optionId);
+    }
+
     public ProductOpencart getByModel(String model) {
         return productOpencartDao.getByModel(model);
     }

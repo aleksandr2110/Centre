@@ -22,6 +22,7 @@ public class OptionValuesDto {
     public String toString() {
         return "OptionValuesDto{" + "\n" +
                 "\t\tvalueCode=" + valueCode + "\n" +
+                "\t\tprice=" + price + "\n" +
                 "\t\tvalue=" + value + "\n" +
                 "\t\tisDefault=" + isDefault + "\n" +
                 "\t\timgUrl=" + imgUrl + "\n" +

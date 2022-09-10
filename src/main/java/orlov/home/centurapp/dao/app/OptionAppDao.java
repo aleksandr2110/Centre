@@ -41,6 +41,18 @@ public class OptionAppDao implements Dao<OptionApp> {
 
     }
 
+    public void deleteByProfileId(int id) {
+        String sql = "delete from option_app where product_profile_id = :productProfileId";
+        jdbcTemplateApp.update(sql, new MapSqlParameterSource("productProfileId", id));
+    }
+
+
+//    TODO
+    public void deleteOptionValue(int optionId) {
+        String sql = "delete from option_app where option_id = :optionId;";
+        jdbcTemplateApp.update(sql, new MapSqlParameterSource("optionId", optionId));
+    }
+
     public List<OptionApp> getOptionsByProductId(int productId) {
         String sql = "select * from option_app where product_profile_id = :productProfileId;";
         return jdbcTemplateApp.query(sql, new MapSqlParameterSource("productProfileId", productId), new OptionAppMapper());

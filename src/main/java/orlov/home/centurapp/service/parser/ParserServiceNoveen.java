@@ -61,6 +61,7 @@ public class ParserServiceNoveen extends ParserServiceAbstract {
             log.info("count product: {}", productsFromSite.size());
 
 
+
             OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
             checkPrice(opencartInfo, supplierApp);
 

@@ -23,6 +23,11 @@ public class ProductAttributeAppService {
         return 0;
     }
 
+    public void deleteByProfileId(int id) {
+        productAttributeAppDao.deleteByProfileId(id);
+    }
+
+
 
     public ProductAttributeApp getProductAttributeId(int productProfileAppId, int attributeAppId) {
         return productAttributeAppDao.getProductAttributeId(productProfileAppId, attributeAppId);

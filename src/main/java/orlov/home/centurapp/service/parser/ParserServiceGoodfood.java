@@ -369,7 +369,6 @@ public class ParserServiceGoodfood extends ParserServiceAbstract {
         return resultProducts;
     }
 
-    //    TODO test attribute value update
     public void updateAttributeValue() {
         SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
         List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);

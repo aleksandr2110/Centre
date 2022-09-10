@@ -28,6 +28,23 @@ public class AppDaoService {
         return productProfileAppService.getProductProfileBySkyJan(sku, supplierAppId);
     }
 
+    public void deleteOptionByProfileId(int id) {
+        optionAppService.deleteByProfileId(id);
+    }
+
+    public void deleteProfileAttributeByProfileId(int id) {
+        productAttributeAppService.deleteByProfileId(id);
+    }
+
+    public void deleteProfileById(int id) {
+        productProfileAppService.deleteById(id);
+    }
+
+    public void deleteOptionValue(int optionId) {
+        optionAppService.deleteOptionValue(optionId);
+    }
+
+
     public void saveProductAttributeApp(ProductAttributeApp productAttributeApp) {
         productAttributeAppService.save(productAttributeApp);
     }

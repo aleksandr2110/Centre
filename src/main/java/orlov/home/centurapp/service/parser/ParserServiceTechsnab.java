@@ -60,7 +60,6 @@ public class ParserServiceTechsnab extends ParserServiceAbstract {
             List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
             log.info("count product: {}", productsFromSite.size());
 
-
             OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
             checkPrice(opencartInfo, supplierApp);
             List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);

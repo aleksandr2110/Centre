@@ -43,4 +43,9 @@ class ProductOptionValueDaoTest {
         value.setOptsku("test x");
         productOptionValueDao.update(value);
     }
+
+    @Test
+    void deleteProductOptionValue(){
+        productOptionValueDao.deleteProductOptionValue(188381099, 245, 3859);
+    }
 }

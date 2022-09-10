@@ -23,7 +23,8 @@ import orlov.home.centurapp.dto.OpencartDto;
 import orlov.home.centurapp.dto.api.artinhead.OptionDto;
 import orlov.home.centurapp.dto.api.artinhead.OptionValuesDto;
 import orlov.home.centurapp.dto.api.artinhead.ProductArtinhead;
-import orlov.home.centurapp.dto.app.ProductHatorDto;
+import orlov.home.centurapp.dto.api.hator.HatorOptionDto;
+import orlov.home.centurapp.dto.api.hator.HatorProductDto;
 import orlov.home.centurapp.entity.app.*;
 import orlov.home.centurapp.entity.opencart.*;
 import orlov.home.centurapp.service.api.translate.TranslateService;
@@ -35,13 +36,19 @@ import orlov.home.centurapp.service.daoservice.opencart.OpencartDaoService;
 import orlov.home.centurapp.util.AppConstant;
 import orlov.home.centurapp.util.OCConstant;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -83,25 +90,22 @@ public class ParserServiceHator extends ParserServiceAbstract {
 
             List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
 
-
             List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
-            log.info("Hator product size: {}", productsFromSite.size());
+
             List<ProductOpencart> fullProductsData = getFullProductsData(productsFromSite, supplierApp);
+
 
             OpencartDto opencartInfo = getOpencartInfo(fullProductsData, supplierApp);
 
             checkPrice(opencartInfo, supplierApp);
             checkProductOption(opencartInfo);
+
             checkStockStatusId(opencartInfo, supplierApp);
 
             List<ProductOpencart> newProduct = opencartInfo.getNewProduct();
 
-            newProduct.forEach(np -> {
-                opencartDaoService.saveProductOpencart(np);
-            });
-
+            newProduct.forEach(opencartDaoService::saveProductOpencart);
             updateDataService.updatePrice(supplierApp.getSupplierAppId());
-
 
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
@@ -116,7 +120,6 @@ public class ParserServiceHator extends ParserServiceAbstract {
         }
     }
 
-    //    TODO test attribute value update
     public void updateAttributeValue() {
         SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
         List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
@@ -155,35 +158,33 @@ public class ParserServiceHator extends ParserServiceAbstract {
     }
 
     public void checkProductOption(OpencartDto opencartInfo) {
-        log.info("Check product option");
         opencartInfo.getAvailableProducts()
                 .forEach(p -> {
-                    List<ProductOptionOpencart> options = opencartDaoService.getProductOptionsById(p.getId());
-                    p.setProductOptionsOpencart(options);
-                    log.info("Check product option: {}", p);
+
+                    List<ProductOptionOpencart> productOptionsOpencartDB = opencartDaoService.getProductOptionsById(p.getId());
+                    log.info("Check product option [ SKU: {} ]", p.getSku());
+
                     ProductProfileApp productProfileApp = p.getProductProfileApp();
-                    List<OptionApp> optionsApp = productProfileApp.getOptions();
-                    log.info("Options app list: {}", optionsApp);
-                    log.info("Product profile: {}", productProfileApp);
+                    List<OptionApp> optionsAppDB = productProfileApp.getOptions();
 
                     p.getOptionsOpencart()
                             .forEach(o -> {
-                                ProductOptionOpencart newProductOptionOpencart = o.getProductOptionOpencart();
-                                newProductOptionOpencart.setProductId(p.getId());
-                                newProductOptionOpencart.setOptionId(o.getOptionId());
-                                newProductOptionOpencart.setProductId(p.getId());
-                                log.info("New product option: {}", newProductOptionOpencart);
 
-                                ProductOptionOpencart searchProductOptionOpencart = p.getProductOptionsOpencart()
+                                ProductOptionOpencart productOptionOpencartWEB = o.getProductOptionOpencart();
+                                productOptionOpencartWEB.setProductId(p.getId());
+                                productOptionOpencartWEB.setOptionId(o.getOptionId());
+                                log.info("WEB OPTION: {}", productOptionOpencartWEB);
+
+                                ProductOptionOpencart productOptionOpencartDB = productOptionsOpencartDB
                                         .stream()
-                                        .filter(po -> newProductOptionOpencart.getOptionId() == po.getOptionId())
+                                        .filter(poo -> productOptionOpencartWEB.getOptionId() == poo.getOptionId())
                                         .findFirst()
                                         .orElse(null);
-                                log.info("Search product option: {}", searchProductOptionOpencart);
+                                log.info("DATABASE OPTION : {}", productOptionOpencartDB);
 
-                                if (Objects.isNull(searchProductOptionOpencart)) {
-                                    log.info("searchProductOptionOpencart IS NULL and save all option");
-                                    ProductOptionOpencart savedProductOption = opencartDaoService.saveProductOptionOpencart(newProductOptionOpencart);
+                                if (Objects.isNull(productOptionOpencartDB)) {
+                                    ProductOptionOpencart savedProductOption = opencartDaoService.saveProductOptionOpencart(productOptionOpencartWEB);
+                                    productOptionsOpencartDB.add(savedProductOption);
                                     o.getValues()
                                             .forEach(v -> {
                                                 ProductOptionValueOpencart newProductOptionValueOpencart = v.getProductOptionValueOpencart();
@@ -192,75 +193,117 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                                 newProductOptionValueOpencart.setOptionId(v.getOptionId());
                                                 newProductOptionValueOpencart.setOptionValueId(v.getOptionValueId());
                                                 ProductOptionValueOpencart savedOptionValueOpencart = opencartDaoService.saveProductOptionValueOpencart(newProductOptionValueOpencart);
-                                                log.info("savedOptionValueOpencart: {}", savedOptionValueOpencart);
+                                                log.info("ALL NEW OPTION: {}", savedOptionValueOpencart);
                                                 OptionApp optionApp = new OptionApp();
                                                 optionApp.setProductProfileId(productProfileApp.getProductProfileId());
                                                 optionApp.setValueId(savedOptionValueOpencart.getProductOptionValueId());
                                                 optionApp.setOptionValue("");
                                                 optionApp.setOptionPrice(savedOptionValueOpencart.getPrice());
                                                 OptionApp saveOptionApp = appDaoService.saveOptionApp(optionApp);
-                                                optionsApp.add(saveOptionApp);
-                                                log.info("saveOptionApp: {}", saveOptionApp);
+
+                                                log.info("ALL NEW OPTION APP: {}", saveOptionApp);
                                             });
                                 } else {
                                     o.getValues()
                                             .forEach(v -> {
                                                 ProductOptionValueOpencart newProductOptionValueOpencart = v.getProductOptionValueOpencart();
-                                                newProductOptionValueOpencart.setProductOptionId(searchProductOptionOpencart.getProductOptionId());
+                                                newProductOptionValueOpencart.setProductOptionId(productOptionOpencartDB.getProductOptionId());
                                                 newProductOptionValueOpencart.setProductId(p.getId());
                                                 newProductOptionValueOpencart.setOptionValueId(v.getOptionValueId());
-                                                log.info("New Product option value: {}", newProductOptionValueOpencart);
 
-                                                ProductOptionValueOpencart searchProductOptionValueOpencart = searchProductOptionOpencart.getOptionValues()
+                                                ProductOptionValueOpencart productOptionValueOpencartDB = productOptionOpencartDB.getOptionValues()
                                                         .stream()
-                                                        .filter(spov -> {
-                                                            log.info("spov == v : {}", spov.getOptionValueId() == v.getOptionValueId());
-                                                            return spov.getOptionValueId() == v.getOptionValueId();
-                                                        })
+                                                        .filter(spov -> spov.getOptionValueId() == v.getOptionValueId())
                                                         .findFirst()
                                                         .orElse(null);
 
-                                                if (Objects.nonNull(searchProductOptionValueOpencart)) {
-                                                    OptionApp searchOptionApp = optionsApp
-                                                            .stream()
-                                                            .filter(oapp -> oapp.getValueId() == searchProductOptionValueOpencart.getProductOptionValueId())
-                                                            .findFirst()
-                                                            .orElse(null);
-                                                    log.info("Search option app for price: {}", searchOptionApp);
-                                                    if (Objects.nonNull(searchOptionApp)) {
-                                                        boolean equalsPrice = searchProductOptionValueOpencart.getPrice().equals(searchOptionApp.getOptionPrice());
-                                                        if (!equalsPrice) {
-                                                            searchProductOptionValueOpencart.setPrice(newProductOptionValueOpencart.getPrice());
-                                                            opencartDaoService.updateProductOptionValueOpencart(searchProductOptionValueOpencart);
-                                                            searchOptionApp.setOptionPrice(searchProductOptionValueOpencart.getPrice());
-                                                            appDaoService.updateOptionApp(searchOptionApp);
-                                                        }
-                                                    }
-                                                } else {
+                                                log.info("DATABASE OPTION VALUE: {}", productOptionValueOpencartDB);
+
+                                                if (Objects.isNull(productOptionValueOpencartDB)) {
                                                     ProductOptionValueOpencart savedOptionValueOpencart = opencartDaoService.saveProductOptionValueOpencart(newProductOptionValueOpencart);
+                                                    log.info("NEW OPTION: {}", savedOptionValueOpencart);
                                                     OptionApp optionApp = new OptionApp();
                                                     optionApp.setProductProfileId(productProfileApp.getProductProfileId());
                                                     optionApp.setValueId(savedOptionValueOpencart.getProductOptionValueId());
                                                     optionApp.setOptionValue("");
                                                     optionApp.setOptionPrice(savedOptionValueOpencart.getPrice());
                                                     OptionApp saveOptionApp = appDaoService.saveOptionApp(optionApp);
-                                                    optionsApp.add(saveOptionApp);
-                                                    log.info("Saved product option value: {}", savedOptionValueOpencart);
+                                                    log.info("NEW OPTION APP: {}", saveOptionApp);
+                                                } else {
+
+                                                    OptionApp searchOptionApp = optionsAppDB
+                                                            .stream()
+                                                            .filter(oapp -> oapp.getValueId() == productOptionValueOpencartDB.getProductOptionValueId())
+                                                            .findFirst()
+                                                            .orElse(null);
+                                                    log.info("SALE DATABASE OPTIONS APP [ price: {} ]", searchOptionApp);
+                                                    if (Objects.nonNull(searchOptionApp)) {
+                                                        BigDecimal newPrice = newProductOptionValueOpencart.getPrice().setScale(4);
+                                                        BigDecimal oldPrice = searchOptionApp.getOptionPrice();
+                                                        boolean equalsPrice = newPrice.equals(oldPrice);
+                                                        log.info("equalsPrice: {} | {} | {}", equalsPrice, newPrice, oldPrice);
+                                                        if (!equalsPrice) {
+                                                            productOptionValueOpencartDB.setPrice(newPrice);
+                                                            opencartDaoService.updateProductOptionValueOpencart(productOptionValueOpencartDB);
+                                                            searchOptionApp.setOptionPrice(newPrice);
+                                                            appDaoService.updateOptionApp(searchOptionApp);
+                                                        }
+                                                    }
+                                                    optionsAppDB.remove(searchOptionApp);
+                                                    productOptionOpencartDB.getOptionValues().remove(productOptionValueOpencartDB);
                                                 }
                                             });
+
+
                                 }
                             });
+
+
+                    optionsAppDB.stream().forEach(opp -> {
+                        log.info("OLD Option app: {}", opp);
+                        appDaoService.deleteOptionValue(opp.getOptionId());
+                    });
+
+                    productOptionsOpencartDB.stream().forEach(pood -> {
+                        pood.getOptionValues().stream().forEach(vv -> {
+                            log.info("OLD value: {}", vv);
+                            opencartDaoService.deleteProductOptionValue(vv.getProductId(), vv.getOptionId(), vv.getOptionValueId());
+                        });
+                    });
+
+                    List<ProductOptionOpencart> options = opencartDaoService.getProductOptionsById(p.getId());
+                    options
+                            .stream().forEach(oldoo -> {
+                                List<ProductOptionValueOpencart> oldOptions = oldoo.getOptionValues()
+                                        .stream()
+                                        .filter(ooo -> ooo.getProductOptionValueId() != 0)
+                                        .collect(Collectors.toList());
+                                if (oldOptions.size() == 0) {
+                                    log.info("OLD option: {}", oldoo);
+                                    opencartDaoService.deleteProductOption(oldoo.getProductId(), oldoo.getOptionId());
+                                }
+                            });
+
+
                 });
+
+
     }
 
     public ProductOpencart settingOptionsOpencart(WebDriver driver, ProductOpencart productOpencart, SupplierApp supplierApp) {
 
         try {
 
+            waitScripts(driver);
+            List<OptionDto> optionDtoWithMargin = setOptions(driver, productOpencart);
+            log.info("ACTUAL PRODUCT DATA = SKU: {}, PRICE: {}, PP: {}", productOpencart.getSku(), productOpencart.getPrice(), productOpencart.getProductProfileApp().getPrice());
+            List<OptionValuesDto> optionValueDtoWithMargin = new ArrayList<>();
+            optionDtoWithMargin.stream().forEach(o -> optionValueDtoWithMargin.addAll(o.getValues()));
+
             List<OptionDto> optionsDtoList = driver.findElements(By.xpath("//div[@id='fm-product-options-box']//div[@class='form-group']"))
                     .stream()
                     .map(eop -> {
-                        moveToElement(eop, driver);
+                        moveToElement(eop, driver, 500);
                         OptionDto optionDto = new OptionDto();
                         String optionTitle = eop.findElement(By.xpath(".//label[@class='fm-control-label']")).getText().replaceAll("\\*", "").trim();
                         log.info("Option title: {}", optionTitle);
@@ -281,9 +324,13 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                         WebElement imageElement = imagesOption.get(0);
                                         optionValueTitle = imageElement.getAttribute("alt");
                                         String optionImageUrl = imageElement.getAttribute("src");
-                                        optionImageUrl = new String(optionImageUrl.getBytes(), StandardCharsets.UTF_8);
+
                                         String optionImageName = optionImageUrl.substring(optionImageUrl.lastIndexOf("/") + 1);
+
+                                        optionImageName = URLDecoder.decode(optionImageName);
+
                                         String optionImgDB = AppConstant.PART_DIR_OC_IMAGE.concat(optionImageName);
+
                                         log.info("Option image url: {}", optionImageUrl);
                                         log.info("Option image name: {}", optionImageName);
                                         log.info("Option image db name: {}", optionImgDB);
@@ -302,46 +349,55 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                     log.info("Option value code: {}", optionValueCode);
 
 
-                                    boolean selected = ol.getAttribute("class").contains(" selected");
-                                    if (!selected) {
-                                        new Actions(driver)
-                                                .moveToElement(ol)
-                                                .pause(Duration.ofMillis(100))
-                                                .click()
-                                                .perform();
-                                        waitScripts(driver);
+//                                    boolean selected = ol.getAttribute("class").contains(" selected");
+//                                    if (!selected) {
+//                                        new Actions(driver)
+//                                                .moveToElement(ol)
+//                                                .pause(Duration.ofMillis(100))
+//                                                .click()
+//                                                .perform();
+//                                        waitScripts(driver);
+//                                    }
+//
+//                                    String textPrice = new WebDriverWait(driver, 10, 500)
+//                                            .until(ExpectedConditions.presenceOfElementLocated(By.xpath("//span[@class='fm-module-price-new']")))
+//                                            .getText().replaceAll("\\D", "");
+//
+//                                    int price = 0;
+//                                    if (!textPrice.isEmpty()) {
+//                                        price = Integer.parseInt(textPrice);
+//                                    }
+
+
+                                    if (optionValueDtoWithMargin.contains(optionValuesDto)) {
+                                        OptionValuesDto valueWithmargin = optionValueDtoWithMargin.get(optionValueDtoWithMargin.indexOf(optionValuesDto));
+                                        optionValuesDto.setMargin(valueWithmargin.getMargin());
                                     }
 
-                                    String textPrice = new WebDriverWait(driver, 10, 500)
-                                            .until(ExpectedConditions.presenceOfElementLocated(By.xpath("//span[@class='fm-module-price-new']")))
-                                            .getText().replaceAll("\\D", "");
 
-                                    int price = 0;
-                                    if (!textPrice.isEmpty()) {
-                                        price = Integer.parseInt(textPrice);
-                                    }
-                                    optionValuesDto.setPrice(price);
                                     return optionValuesDto;
                                 })
                                 .collect(Collectors.toList());
 
-                        List<OptionValuesDto> sortedOptionValues = optionValues
-                                .stream()
-                                .sorted(Comparator.comparingInt(OptionValuesDto::getPrice))
-                                .collect(Collectors.toList());
-
-                        OptionValuesDto defaultOption = sortedOptionValues.get(0);
-                        defaultOption.setDefault(true);
-
-                        int minOptionPrice = defaultOption.getPrice();
-                        optionValues = sortedOptionValues
-                                .stream()
-                                .peek(val -> {
-                                    int price = val.getPrice();
-                                    int margin = price - minOptionPrice;
-                                    val.setMargin(margin);
-                                })
-                                .collect(Collectors.toList());
+//                        List<OptionValuesDto> sortedOptionValues = optionValues
+//                                .stream()
+//                                .sorted(Comparator.comparingInt(OptionValuesDto::getPrice))
+//                                .collect(Collectors.toList());
+//
+//                        OptionValuesDto defaultOption = sortedOptionValues.get(0);
+//                        defaultOption.setDefault(true);
+//                        int minOptionPrice = defaultOption.getPrice();
+//                        log.info("Min option price: {}", minOptionPrice);
+//                        optionValues = sortedOptionValues
+//                                .stream()
+//
+//                                .peek(val -> {
+//                                    int price = val.getPrice();
+//                                    int margin = price - minOptionPrice;
+//                                    val.setMargin(margin);
+//
+//                                })
+//                                .collect(Collectors.toList());
 
                         optionDto.setValues(optionValues);
                         return optionDto;
@@ -349,32 +405,28 @@ public class ParserServiceHator extends ParserServiceAbstract {
                     .collect(Collectors.toList());
 
 
-            optionsDtoList
-                    .forEach(optionDto -> {
-                        OptionValuesDto optionValuesDto = optionDto.getValues()
-                                .stream()
-                                .filter(OptionValuesDto::isDefault).findFirst().orElse(null);
-                        if (Objects.nonNull(optionValuesDto)) {
-                            WebElement defaultOption = new WebDriverWait(driver, 10, 500)
-                                    .until(ExpectedConditions.elementToBeClickable(By.xpath("//div[@id='input-option" + optionDto.getNameCode() + "']//input[@value='" + optionValuesDto.getValueCode() + "']")));
-                            new Actions(driver)
-                                    .moveToElement(defaultOption)
-                                    .pause(Duration.ofMillis(100))
-                                    .click()
-                                    .perform();
-                            waitScripts(driver);
-                        }
-                    });
-
-            String textProductPrice = new WebDriverWait(driver, 10, 500)
-                    .until(ExpectedConditions.presenceOfElementLocated(By.xpath("//span[@class='fm-module-price-new']")))
-                    .getText().replaceAll("\\D", "");
-
-            if (!textProductPrice.isEmpty()) {
-                BigDecimal price = new BigDecimal(textProductPrice);
-                productOpencart.setPrice(price);
-                productOpencart.setItuaOriginalPrice(price);
-            }
+//            optionsDtoList
+//                    .forEach(optionDto -> {
+//
+//                        OptionValuesDto optionValuesDto = optionDto.getValues()
+//                                .stream()
+//                                .filter(OptionValuesDto::isDefault)
+//                                .findFirst()
+//                                .orElse(null);
+//
+//                        if (Objects.nonNull(optionValuesDto)) {
+//                            log.info("Get Option by code OPT: {}  OPT VAL: {}", optionDto.getNameCode(), optionValuesDto.getValueCode());
+//                            WebElement defaultOption = new WebDriverWait(driver, 30, 500)
+//                                    .until(ExpectedConditions.elementToBeClickable(By.xpath("//div[@id='input-option" + optionDto.getNameCode() + "']//input[@value='" + optionValuesDto.getValueCode() + "']")));
+//
+//                            new Actions(driver)
+//                                    .moveToElement(defaultOption)
+//                                    .pause(Duration.ofMillis(100))
+//                                    .click()
+//                                    .perform();
+//                            waitScripts(driver);
+//                        }
+//                    });
 
 
             List<OptionOpencart> optionsOpencartList = optionsDtoList
@@ -433,6 +485,179 @@ public class ParserServiceHator extends ParserServiceAbstract {
         }
 
         return productOpencart;
+    }
+
+    public List<OptionDto> setOptions(WebDriver driver, ProductOpencart productOpencart) {
+        String pageSource = driver.getPageSource();
+        int idxStart = pageSource.indexOf("\"ro\":");
+        int idxEnd = pageSource.indexOf("\"options_ids\":");
+        log.info("IDX s: {} | e: {}", idxStart, idxEnd);
+        String jsAllDat = pageSource.substring(idxStart, idxEnd);
+
+        List<String> hatorDataStringList = new ArrayList<>();
+        int idxBegin = 0;
+        int idxFinish = 0;
+        boolean hasNext = true;
+
+        do {
+            idxBegin = jsAllDat.indexOf("{\"relatedoptions_id\"", idxFinish);
+            idxFinish = jsAllDat.indexOf("\"specials\":", idxBegin);
+            log.info("idx 1: [{}] 2: [{}]", idxBegin, idxFinish);
+            if (idxBegin == -1 || idxFinish == -1) {
+                hasNext = false;
+            } else {
+                String substring = jsAllDat.substring(idxBegin, idxFinish);
+                hatorDataStringList.add(substring);
+                log.info("ONCE result: {}", substring);
+            }
+
+        } while (hasNext);
+
+
+        List<OptionDto> optionDtoList = new ArrayList<>();
+
+        String subStringId = "\"relatedoptions_id\":\"";
+        String subStringPrice = "\"price\":\"";
+        String subStringOption = "\"options\":{";
+        String subStringOptionEnd = "\"discounts\"";
+        List<HatorProductDto> hatorProductDtoList = hatorDataStringList
+                .stream()
+                .map(hs -> {
+                    log.info("NEW PRODUCT");
+                    int idxId = hs.indexOf(subStringId) + subStringId.length();
+                    int idxPoint = hs.indexOf(",", idxId) - 1;
+                    String subId = hs.substring(idxId, idxPoint);
+                    log.info("subId: {}", subId);
+
+                    int idxPrice = hs.indexOf(subStringPrice) + subStringPrice.length();
+                    idxPoint = hs.indexOf(",", idxPrice) - 1;
+                    String subPrice = hs.substring(idxPrice, idxPoint);
+                    log.info("subPrice: {}", subPrice);
+
+                    int idxOption = hs.indexOf(subStringOption) + subStringOption.length();
+                    idxPoint = hs.indexOf(subStringOptionEnd, idxOption);
+                    String subOption = hs.substring(idxOption, idxPoint);
+                    log.info("subOption: {}", subOption);
+
+                    List<String> stringOptions = Arrays.asList(subOption.split(","));
+                    List<OptionValuesDto> optionValuesDtoList = new ArrayList<>();
+                    List<HatorOptionDto> hatorOptionDtoList = stringOptions
+                            .stream()
+                            .map(so -> {
+                                String kay = so.substring(0, so.indexOf(":")).replaceAll("\\D", "");
+                                String value = so.substring(so.indexOf(":")).replaceAll("\\D", "");
+                                log.info("Option K: [{}], V: [{}]", kay, value);
+
+
+                                OptionDto optionDto = new OptionDto();
+                                optionDto.setNameCode(kay);
+                                OptionValuesDto optionValuesDto = new OptionValuesDto();
+                                optionValuesDto.setValueCode(value);
+                                optionValuesDtoList.add(optionValuesDto);
+                                boolean hasOption = optionDtoList.contains(optionDto);
+                                if (hasOption) {
+                                    OptionDto optionDtoFromList = optionDtoList.get(optionDtoList.indexOf(optionDto));
+                                    boolean hasValue = optionDtoFromList.getValues().contains(optionValuesDto);
+                                    if (!hasValue) {
+                                        optionDtoFromList.getValues().add(optionValuesDto);
+                                    }
+                                } else {
+                                    optionDto.getValues().add(optionValuesDto);
+                                    optionDtoList.add(optionDto);
+                                }
+
+
+                                return new HatorOptionDto(kay, value);
+                            })
+                            .collect(Collectors.toList());
+                    return new HatorProductDto(Integer.parseInt(subId), (int) Double.parseDouble(subPrice), hatorOptionDtoList, optionValuesDtoList);
+                })
+                .collect(Collectors.toList());
+
+        List<HatorProductDto> sortedProductDto = hatorProductDtoList
+                .stream()
+                .sorted(Comparator.comparingInt(HatorProductDto::getPrice))
+                .collect(Collectors.toList());
+
+
+        HatorProductDto defaultHatorProductDto = sortedProductDto.get(0);
+
+
+        defaultHatorProductDto.getHatorOptionDtoList()
+                .forEach(ho -> {
+                    optionDtoList
+                            .forEach(o -> {
+                                boolean isDef = o.getNameCode().equals(ho.getOptionCode());
+                                if (isDef) {
+                                    o.getValues()
+                                            .forEach(v -> {
+                                                boolean isDefVal = v.getValueCode().equals(ho.getValueCode());
+                                                if (isDefVal) {
+                                                    v.setDefault(true);
+                                                }
+                                            });
+                                }
+                            });
+                });
+
+        log.info("Hator DTO DEFAULT: {}", defaultHatorProductDto);
+        List<OptionValuesDto> defaultOptionValues = optionDtoList
+                .stream()
+                .map(od -> od.getValues().stream().filter(OptionValuesDto::isDefault).findFirst().orElse(null))
+                .collect(Collectors.toList());
+        log.info("DEF VALUES: {}", defaultOptionValues);
+
+
+        int priceDef = defaultHatorProductDto.getPrice();
+
+        BigDecimal bigDecimalPrice = new BigDecimal(priceDef).setScale(4);
+        productOpencart.setPrice(bigDecimalPrice);
+        productOpencart.setItuaOriginalPrice(bigDecimalPrice);
+
+
+        optionDtoList
+                .forEach(od -> {
+                    OptionValuesDto optionValuesDtoDefault = od.getValues().stream().filter(OptionValuesDto::isDefault).findFirst().orElse(null);
+
+                    od.getValues().stream()
+                            .filter(ovd -> !ovd.isDefault())
+                            .forEach(ovd -> {
+
+                                List<OptionValuesDto> optionCheckedList = defaultOptionValues
+                                        .stream()
+                                        .filter(dov -> !dov.equals(optionValuesDtoDefault))
+                                        .collect(Collectors.toList());
+
+                                optionCheckedList.add(ovd);
+
+                                log.info("checked list: {}", optionCheckedList);
+
+                                HatorProductDto equeldHatorProduct = hatorProductDtoList
+                                        .stream()
+                                        .filter(h -> {
+                                            List<OptionValuesDto> collect = h.getOptionValuesDtoList()
+                                                    .stream()
+                                                    .filter(optionCheckedList::contains)
+                                                    .collect(Collectors.toList());
+                                            log.info("Contains colect option: {}", collect.size());
+                                            return collect.size() == optionCheckedList.size();
+                                        })
+                                        .findFirst()
+                                        .orElse(null);
+
+                                if (Objects.nonNull(equeldHatorProduct)) {
+                                    int priceHatorDto = equeldHatorProduct.getPrice();
+                                    int actualPrice = priceHatorDto - priceDef;
+                                    ovd.setMargin(actualPrice);
+                                }
+                                log.info("equeldHatorProduct: {}", equeldHatorProduct);
+
+                            });
+                });
+
+
+        log.info("Options DTO: \n{}", optionDtoList);
+        return optionDtoList;
     }
 
 
@@ -536,7 +761,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
 
                                     Elements elementsProduct = doc.select("div.product-layout");
                                     log.info("Count product: {} on page: {}", elementsProduct.size(), countPage);
-                                    List<ProductOpencart> productFromPage = elementsProduct
+                                    elementsProduct
                                             .stream()
                                             .map(ep -> {
                                                 log.info("");
@@ -557,6 +782,8 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                                 String urlImage = ep.select("img[data-srcset]").get(0).attr("src").replaceAll("228x228", "1000x1000");
                                                 log.info("Product url image: {}", urlImage);
                                                 String imageName = urlImage.substring(urlImage.lastIndexOf("/") + 1);
+
+                                                imageName = sku.concat("-").concat(imageName);
                                                 log.info("Product image name: {}", imageName);
                                                 String imageDBName = AppConstant.PART_DIR_OC_IMAGE.concat(imageName);
                                                 log.info("Product image db name: {}", imageDBName);
@@ -583,10 +810,15 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                                         .withProductProfileApp(productProfileApp)
                                                         .build();
                                                 product.setCategoriesOpencart(parentsCategories);
+
+                                                if (!allProductInitList.contains(product)) {
+                                                    allProductInitList.add(product);
+                                                }
+
                                                 return product;
                                             })
                                             .collect(Collectors.toList());
-                                    allProductInitList.addAll(productFromPage);
+
                                 }
                             } catch (Exception e) {
                                 log.warn("Problem iterate page", e);
@@ -634,7 +866,6 @@ public class ParserServiceHator extends ParserServiceAbstract {
                 .stream()
                 .peek(prod -> {
 
-
                     String urlProduct = prod.getUrlProduct();
                     log.info("{}. Get data from product url: {}", count.addAndGet(1), urlProduct);
 
@@ -643,10 +874,12 @@ public class ParserServiceHator extends ParserServiceAbstract {
                         WebDriverWait webDriverWait = new WebDriverWait(driver, 10, 500);
                         WebElement ukLanguageElement = webDriverWait
                                 .until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@title='Ukrainian']")));
+
                         new Actions(driver)
                                 .moveToElement(ukLanguageElement)
                                 .pause(Duration.ofSeconds(1))
                                 .click()
+                                .pause(Duration.ofSeconds(1))
                                 .perform();
                         waitTranslate(driver);
 
@@ -655,7 +888,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
                         log.info("title: {}", title);
                         WebElement descriptionElement = webDriverWait
                                 .until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='fm-product-description-cont']")));
-                        moveToElement(descriptionElement, driver);
+                        moveToElement(descriptionElement, driver, 200);
                         String description = descriptionElement.getText();
                         description = getDescription(description);
 
@@ -667,7 +900,6 @@ public class ParserServiceHator extends ParserServiceAbstract {
                         prod.getProductsDescriptionOpencart().add(descriptionOpencart);
 
 
-
                         ManufacturerApp manufacturerApp = getManufacturerApp(MANUFACTURER_NAME, supplierApp);
                         ProductProfileApp productProfileApp = prod.getProductProfileApp();
                         productProfileApp.setTitle(title);
@@ -677,9 +909,11 @@ public class ParserServiceHator extends ParserServiceAbstract {
                         ProductProfileApp savedProductProfile = getProductProfile(productProfileApp, supplierApp);
                         prod.setProductProfileApp(savedProductProfile);
 
+                        log.info("Product price for profile: {}", prod.getPrice());
+
                         List<WebElement> attributeElements = driver.findElements(By.xpath("//div[@id='fm-product-attributes-top']"));
                         if (!attributeElements.isEmpty()) {
-                            moveToElement(attributeElements.get(0), driver);
+                            moveToElement(attributeElements.get(0), driver, 200);
                             List<AttributeWrapper> attributes = attributeElements.get(0).findElements(By.xpath(".//div[contains(@class, 'fm-product-attributtes-item')]"))
                                     .stream()
                                     .map(row -> {
@@ -707,10 +941,9 @@ public class ParserServiceHator extends ParserServiceAbstract {
                         }
 
 
-
-
                         setManufacturer(prod, supplierApp);
                         setPriceWithMarkup(prod);
+
                         List<WebElement> imageElements = driver.findElements(By.xpath("//div[@id='image-additional']//a[@data-href and contains(@data-href, '1000x1000')]"));
                         log.info("Images count: {}", imageElements.size());
 
@@ -726,6 +959,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                             int imageCount = countImg.addAndGet(1);
                                             log.info("Image url: {}", fullUrl);
                                             String imgName = fullUrl.substring(fullUrl.lastIndexOf("/") + 1);
+                                            imgName = prod.getSku().concat("-").concat(imgName);
                                             log.info("Image name: {}", imgName);
                                             String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
                                             log.info("Image DB name: {}", dbImgPath);
@@ -747,13 +981,15 @@ public class ParserServiceHator extends ParserServiceAbstract {
 
 
                             log.info("Images: {}", productImages);
-
                             prod.setImagesOpencart(productImages);
+
+                            log.info("Product: [sku={}] price: [{}]", prod.getSku(), prod.getPrice());
                         }
 
                     } catch (Exception ex) {
                         log.warn("Bad parsing product data", ex);
                     }
+
 
                 })
                 .filter(p -> p.getId() != -1)
@@ -770,10 +1006,157 @@ public class ParserServiceHator extends ParserServiceAbstract {
         return fullProducts;
     }
 
-    public void moveToElement(WebElement elementForMove, WebDriver driver) {
+    public void dataDuplicateProduct() {
+        SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
+        List<ProductProfileApp> productProfilesApp = supplierApp.getProductProfilesApp();
+
+        List<ProductProfileApp> unicList = productProfilesApp
+                .stream()
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<ProductProfileApp> collect = productProfilesApp
+                .stream()
+                .filter(pp -> {
+                    int productProfileId = pp.getProductProfileId();
+                    ProductProfileApp prodileResult = unicList
+                            .stream()
+                            .filter(upp -> productProfileId == upp.getProductProfileId())
+                            .findFirst()
+                            .orElse(null);
+                    return Objects.isNull(prodileResult);
+                })
+                .collect(Collectors.toList());
+
+        collect.forEach(c -> {
+            int productProfileId = c.getProductProfileId();
+
+            appDaoService.deleteProfileAttributeByProfileId(productProfileId);
+            appDaoService.deleteOptionByProfileId(productProfileId);
+            appDaoService.deleteProfileById(productProfileId);
+        });
+
+    }
+
+
+    public void updateImages() {
+
+        WebDriverManager.chromedriver().setup();
+        WebDriverManager.chromedriver().setup();
+        ChromeOptions options = new ChromeOptions();
+        options.setHeadless(true);
+        options.addArguments("--disable-extensions");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--window-size=1920x1080");
+
+        WebDriver driver = new ChromeDriver(options);
+
+        Dimension dm = new Dimension(1552, 849);
+        driver.manage().window().setSize(dm);
+
+        SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
+        List<ProductOpencart> productOpencartList = opencartDaoService.getAllProductOpencartBySupplierAppName(supplierApp.getName());
+
+        List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
+        List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
+
+        productsFromSite
+                .stream()
+                .forEach(p -> {
+
+                    try {
+                        String url = p.getUrlProduct();
+                        String sku = p.getSku();
+
+                        ProductOpencart searchProductOpencart = productOpencartList
+                                .stream()
+                                .filter(pdb -> pdb.getSku().equals(sku))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (Objects.nonNull(searchProductOpencart)) {
+                            log.info("URL: {}", url);
+                            log.info("SKU: {}", sku);
+
+
+                            driver.get(url);
+                            String mainImageName = searchProductOpencart.getImage().replaceAll("catalog/app/", "");
+                            waitScripts(driver);
+                            TimeUnit.SECONDS.sleep(2);
+
+                            List<WebElement> imageElements = new WebDriverWait(driver, 10, 500)
+                                    .until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.xpath("//div[@id='image-additional']//a[@data-href and contains(@data-href, '1000x1000')]")));
+                            log.info("Images count: {}", imageElements.size());
+
+
+                            List<String> stringUIrlImageList = new ArrayList<>();
+                            if (imageElements.size() > 0) {
+                                AtomicInteger countImg = new AtomicInteger();
+                                List<ImageOpencart> productImages = imageElements
+                                        .stream()
+                                        .map(i -> {
+                                            try {
+
+
+                                                String fullUrl = i.getAttribute("data-href");
+                                                if (!stringUIrlImageList.contains(fullUrl) && !fullUrl.contains(mainImageName)) {
+                                                    stringUIrlImageList.add(fullUrl);
+                                                    int imageCount = countImg.addAndGet(1);
+                                                    log.info("Image url: {}", fullUrl);
+                                                    String imgName = fullUrl.substring(fullUrl.lastIndexOf("/") + 1);
+                                                    imgName = searchProductOpencart.getSku().concat("-").concat(imgName);
+                                                    log.info("Image name: {}", imgName);
+                                                    String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                                    log.info("Image DB name: {}", dbImgPath);
+                                                    if (!searchProductOpencart.getImage().equals(dbImgPath)) {
+                                                        downloadImage(fullUrl, dbImgPath);
+                                                        return new ImageOpencart.Builder()
+                                                                .withImage(dbImgPath)
+                                                                .withSortOrder(imageCount)
+                                                                .build();
+                                                    } else {
+                                                        return null;
+                                                    }
+                                                } else {
+                                                    return null;
+                                                }
+                                            } catch (Exception ex) {
+                                                log.warn("Exception update image inner.", ex);
+                                                return null;
+                                            }
+                                        })
+                                        .filter(Objects::nonNull)
+                                        .collect(Collectors.toList());
+
+                                opencartDaoService.deleteImageOpencartByProductId(searchProductOpencart.getId());
+                                log.info("Images: {}", productImages);
+                                productImages
+                                        .forEach(i -> {
+                                            i.setProductId(searchProductOpencart.getId());
+                                            opencartDaoService.saveImageOpencart(i);
+                                        });
+
+
+                            }
+                        }
+                    } catch (Exception ex) {
+                        log.warn("Exception update image.", ex);
+                    }
+
+
+                });
+
+
+        driver.close();
+        driver.quit();
+    }
+
+    public void moveToElement(WebElement elementForMove, WebDriver driver, int pose) {
         new Actions(driver)
                 .moveToElement(elementForMove)
-                .pause(Duration.ofMillis(100))
+                .pause(Duration.ofMillis(pose))
                 .perform();
         waitScripts(driver);
     }
@@ -805,7 +1188,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
     }
 
     public void waitScripts(WebDriver driver) {
-        new WebDriverWait(driver, 10, 500).until((ExpectedCondition<Boolean>) webDriver -> {
+        new WebDriverWait(driver, 30, 500).until((ExpectedCondition<Boolean>) webDriver -> {
             boolean isAjaxDone = ((JavascriptExecutor) driver).executeScript("return jQuery.active == 0").equals(true);
             return isAjaxDone;
         });

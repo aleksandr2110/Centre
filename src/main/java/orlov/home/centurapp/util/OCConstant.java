@@ -50,6 +50,8 @@ public class OCConstant {
     public static final String CATEGORY_MAILS = "centur1@ukr.net";
     public static final int CURRENCY_ID = 6;
     public static final String OPTION_TYPE_RADIO = "radio";
+    public static final String OPTION_TYPE_CHECKBOX = "checkbox";
+    public static final String OPTION_TYPE_SELECT = "select";
     public static final String PLUS_SIGN = "+";
 
 }

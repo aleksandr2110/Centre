@@ -68,6 +68,7 @@ public class ParserServiceArtinhead extends ParserServiceAbstract {
             List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
 
             List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
+
             List<ProductOpencart> fullProductsData = getFullProductsData(productsFromSite, supplierApp);
 
             OpencartDto opencartInfo = getOpencartInfo(fullProductsData, supplierApp);
@@ -99,7 +100,6 @@ public class ParserServiceArtinhead extends ParserServiceAbstract {
     }
 
 
-    //    TODO test attribute value update
     public void updateAttributeValue() {
         SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
         List<ProductProfileApp> productProfilesApp = supplierApp.getProductProfilesApp();
