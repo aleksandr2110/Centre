@@ -344,7 +344,6 @@ public class UpdateDataService {
                 .stream()
 //                .filter(p -> !p.getManufacturerApp().getOpencartTitle().isEmpty())
                 .map(p -> {
-                    log.info("P: {}", p);
                     ProductOpencart productOpencartBySku = getProductOpencartBySku(products, p.getSku());
                     if (Objects.nonNull(productOpencartBySku)) {
 

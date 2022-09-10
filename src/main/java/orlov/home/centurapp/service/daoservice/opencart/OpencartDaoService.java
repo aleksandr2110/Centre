@@ -38,7 +38,9 @@ public class OpencartDaoService {
         return productOpencartService.getAllModelByAttributeId(attrId);
     }
 
-
+    public void deleteProductOption(int productId, int optionId) {
+        productOpencartService.deleteProductOption(productId, optionId);
+    }
     public void deleteFullProductDataById(int productId){
         productOpencartService.deleteFullProductById(productId);
     }
@@ -49,6 +51,10 @@ public class OpencartDaoService {
 
     public ProductSupplierOpencart updateProductSupplierOpencart(ProductSupplierOpencart productSupplierOpencart) {
         return productOpencartService.updateProductSupplierOpencart(productSupplierOpencart);
+    }
+
+    public void deleteProductOptionValue(int productId, int optionId, int optionValueId) {
+        productOpencartService.deleteProductOptionValue(productId, optionId, optionValueId);
     }
 
     public void deleteByProductSupplier(int productId, String supCode) {

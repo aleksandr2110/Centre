@@ -28,7 +28,10 @@ class ProductOptionDaoTest {
         log.info("ID: {}", save);
     }
 
-
+    @Test
+    void deleteProductOption() {
+        productOptionDao.deleteProductOption(188381099, 245);
+    }
 
 
     @Test

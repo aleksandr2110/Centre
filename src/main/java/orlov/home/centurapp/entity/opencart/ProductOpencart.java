@@ -5,13 +5,16 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import orlov.home.centurapp.dto.AttributeWrapper;
+import orlov.home.centurapp.dto.api.artinhead.OptionDto;
 import orlov.home.centurapp.entity.app.ProductProfileApp;
 import orlov.home.centurapp.util.OCConstant;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -72,9 +75,11 @@ public class ProductOpencart {
     private List<AttributeOpencart> attributesOpencart = new ArrayList<>();
     private List<AttributeWrapper> attributesWrapper = new ArrayList<>();
     private List<String> subImages = new ArrayList<>();
+    private List<OptionDto> optionDtoList = new ArrayList<>();
     private String urlProduct;
     private String urlImage;
     private String title;
+
 
     public static class Builder {
         private ProductOpencart product;

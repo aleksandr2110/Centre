@@ -39,6 +39,8 @@ public class AdminController {
     }
 
 
+
+
     @GetMapping("/rp/image")
     public String downloadImagesRP() {
         managerService.downloadImageRP();
@@ -167,6 +169,14 @@ public class AdminController {
     public String translateRP() {
         log.info("Starts translate");
         managerService.translateRP();
+        log.info("End translate");
+        return "redirect:/admin/block";
+    }
+
+    @GetMapping("/hatorimg")
+    public String updateHatorImg() {
+        log.info("Starts translate");
+        managerService.importVivat();
         log.info("End translate");
         return "redirect:/admin/block";
     }

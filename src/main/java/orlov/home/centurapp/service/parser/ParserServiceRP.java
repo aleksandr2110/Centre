@@ -564,7 +564,7 @@ public class ParserServiceRP extends ParserServiceAbstract {
                             firstProfileApp.setManufacturerId(manufacturerApp.getManufacturerId());
                             firstProfileApp.setManufacturerApp(manufacturerApp);
                             ProductProfileApp savedProductProfile = getProductProfile(firstProfileApp, supplierApp);
-                            savedProductProfile.setPrice(price);
+//                            savedProductProfile.setPrice(price);
                             p.setProductProfileApp(savedProductProfile);
 
                             p.setPrice(price);

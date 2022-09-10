@@ -58,6 +58,8 @@ public class ParserServiceIndigowood extends ParserServiceAbstract {
 
             List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
             List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
+
+
             OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
             checkPrice(opencartInfo, supplierApp);
             List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);

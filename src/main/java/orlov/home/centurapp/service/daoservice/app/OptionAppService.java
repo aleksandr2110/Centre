@@ -21,9 +21,17 @@ public class OptionAppService {
         return optionApp;
     }
 
+    public void deleteOptionValue(int optionId) {
+        optionAppDao.deleteOptionValue(optionId);
+    }
+
     public OptionApp updateOptionApp(OptionApp optionApp) {
         optionAppDao.update(optionApp);
         return optionApp;
+    }
+
+    public void deleteByProfileId(int id) {
+        optionAppDao.deleteByProfileId(id);
     }
 
     public List<OptionApp> getAllOptionApp() {

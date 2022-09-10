@@ -42,9 +42,9 @@ public class ProductProfileAppDao implements Dao<ProductProfileApp> {
 
     @Override
     public void deleteById(int id) {
-
+        String sql = "delete from product_profile_app where product_profile_id = :productProfileId";
+        jdbcTemplateApp.update(sql, new MapSqlParameterSource("productProfileId", id));
     }
-
 
     public void deleteAll() {
         String sql = "delete from product_profile_app";
@@ -63,6 +63,7 @@ public class ProductProfileAppDao implements Dao<ProductProfileApp> {
         jdbcTemplateApp.update(sql, new MapSqlParameterSource(data));
         return productProfileApp;
     }
+
 
     @Override
     public List<ProductProfileApp> getAll() {

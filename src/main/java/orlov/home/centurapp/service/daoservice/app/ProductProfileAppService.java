@@ -15,6 +15,9 @@ public class ProductProfileAppService {
 
     private final ProductProfileAppDao productProfileAppDao;
 
+    public void deleteById(int id) {
+        productProfileAppDao.deleteById(id);
+    }
 
     public ProductProfileApp getProductProfileBySkyJan(String sku, int supplierAppId) {
         return productProfileAppDao.getProductProfileBySkyJan(sku, supplierAppId);

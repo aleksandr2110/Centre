@@ -14,6 +14,7 @@ public class OptionDto {
     private String nameCode;
     private String name;
     private int minOptionPrice;
+    private String optionType;
     private List<OptionValuesDto> values = new ArrayList<>();
 
     @Override

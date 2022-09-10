@@ -50,6 +50,14 @@ public class ProductOptionDao implements Dao<ProductOptionOpencart> {
         jdbcTemplateOpencart.update(sql, new MapSqlParameterSource("productId", productId));
     }
 
+    public void deleteProductOption(int productId, int optionId) {
+        String sql = "delete from oc_product_option where product_id = :productId and option_id = :optionId";
+        MapSqlParameterSource data = new MapSqlParameterSource();
+        data.addValue("productId", productId);
+        data.addValue("optionId", optionId);
+
+        jdbcTemplateOpencart.update(sql, data);
+    }
 
 
     @Override

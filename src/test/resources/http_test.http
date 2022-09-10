@@ -1,8 +1,8 @@
-POST https://tfb2b.com.ua/uk/inner/user/login
-Content-Type: application/json;charset=UTF-8
-User-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36
-
-{
-  "password": "MRI0JKRC",
-  "username": "centur1@ukr.net"
-}
+POST https://translate.googleapis.com/translate_a/t?anno=3&client=te&format=html&v=1.0&key&logld=vTE_20220907&sl=ru&tl=uk&tc=4&ctt=1&sr=1&tk=849988.783479&mode=1
+#Content-Type: application/json;charset=UTF-8
+#User-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36
+#
+#{
+#  "password": "MRI0JKRC",
+#  "username": "centur1@ukr.net"
+#}
