@@ -35,6 +35,9 @@ public class ManagerService {
     private final ParserServiceUhlmash parserServiceUhlmash;
     private final ParserServiceKirovogradvesy parserServiceKirovogradvesy;
     private final ParserServiceVivat parserServiceVivat;
+    private final ParserServiceCanadapech parserServiceCanadapech;
+    private final ParserServiceOscar parserServiceOscar;
+    private final ParserServiceAnshar parserServiceAnshar;
 
 
     public void updateNewModel() {
@@ -108,6 +111,9 @@ public class ManagerService {
             while (true) {
                 try {
                     log.info("Start global process");
+                    parserServiceAnshar.doProcess();
+                    parserServiceOscar.doProcess();
+                    parserServiceCanadapech.doProcess();
                     parserServiceRP.doProcess();
                     parserServiceHator.doProcess();
                     parserServiceKirovogradvesy.doProcess();
@@ -163,8 +169,6 @@ public class ManagerService {
         }).start();
 
     }
-
-
 
 
     public void updateDescriptioKodki() {

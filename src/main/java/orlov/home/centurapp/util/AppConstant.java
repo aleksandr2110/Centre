@@ -11,5 +11,6 @@ public class AppConstant {
     public static String GLOBAL_SUPPLIER_CATEGORY_NAME = "Постачальники";
     public static String GLOBAL_SUPPLIER_CATEGORY_KEY = "suppliers";
     public static String HEX_BLACK_COLOR = "#000000";
+    public static String PHONE_NUMBER_REGEX = "(?<=|\\s|>|\\;|\\:|\\))(?:\\+|3|8|0|\\()[\\d\\-\\(\\) ]{8,}\\d";
 
 }

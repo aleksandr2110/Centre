@@ -4,6 +4,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import orlov.home.centurapp.dto.api.goodfood.GoodfoodCategory;
 import orlov.home.centurapp.util.OCConstant;
 
@@ -33,6 +35,7 @@ public class CategoryOpencart {
     private List<CategoryDescriptionOpencart> descriptions = new ArrayList<>();
     private List<CategoryOpencart> categoriesOpencart = new ArrayList<>();
     private List<GoodfoodCategory> subGoodfoodCategories = new ArrayList<>();
+    private Element categoryElement = null;
 
     private String url;
     public static class Builder {

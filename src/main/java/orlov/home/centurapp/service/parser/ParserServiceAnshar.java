@@ -1,34 +1,26 @@
 package orlov.home.centurapp.service.parser;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.interactions.Action;
 import org.openqa.selenium.interactions.Actions;
-import org.openqa.selenium.support.ui.*;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
-import orlov.home.centurapp.dao.opencart.ProductDescriptionOpencartDao;
-import orlov.home.centurapp.dto.AttributeWrapper;
 import orlov.home.centurapp.dto.OpencartDto;
 import orlov.home.centurapp.dto.api.artinhead.OptionDto;
 import orlov.home.centurapp.dto.api.artinhead.OptionValuesDto;
-import orlov.home.centurapp.dto.api.artinhead.ProductArtinhead;
-import orlov.home.centurapp.dto.api.hator.HatorOptionDto;
-import orlov.home.centurapp.dto.api.hator.HatorProductDto;
 import orlov.home.centurapp.entity.app.*;
 import orlov.home.centurapp.entity.opencart.*;
 import orlov.home.centurapp.service.api.translate.TranslateService;
 import orlov.home.centurapp.service.appservice.FileService;
+import orlov.home.centurapp.service.appservice.ImageService;
 import orlov.home.centurapp.service.appservice.ScraperDataUpdateService;
 import orlov.home.centurapp.service.appservice.UpdateDataService;
 import orlov.home.centurapp.service.daoservice.app.AppDaoService;
@@ -36,31 +28,24 @@ import orlov.home.centurapp.service.daoservice.opencart.OpencartDaoService;
 import orlov.home.centurapp.util.AppConstant;
 import orlov.home.centurapp.util.OCConstant;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 @Service
 @Slf4j
-public class ParserServiceHator extends ParserServiceAbstract {
-    private final String SUPPLIER_NAME = "hator";
-    private final String SUPPLIER_URL = "https://hator-m.com/";
-    private final String SUPPLIER_URL_CATEGORY = "";
-    private final String DISPLAY_NAME = "179 - ХАТОР-М";
-    private final String MANUFACTURER_NAME = "ХАТОР-М";
+public class ParserServiceAnshar extends ParserServiceAbstract {
+    private final String SUPPLIER_NAME = "anshar";
+    private final String SUPPLIER_URL = "https://www.anshar.com.ua/uk";
+    private final String SUPPLIER_URL_DEFAULT = "https://www.anshar.com.ua";
+    private final String SUPPLIER_ALL_CATALOG = "https://www.anshar.com.ua/uk/catalog/all";
+    private final String DISPLAY_NAME = "1 - ГЕЛІКА";
+    private final String MANUFACTURER_NAME = "";
     private final String URL_PART_PAGE = "?page=";
 
     private final AppDaoService appDaoService;
@@ -68,14 +53,16 @@ public class ParserServiceHator extends ParserServiceAbstract {
     private final TranslateService translateService;
     private final FileService fileService;
     private final UpdateDataService updateDataService;
+    private final ImageService imageService;
 
-    public ParserServiceHator(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, UpdateDataService updateDataService) {
+    public ParserServiceAnshar(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, UpdateDataService updateDataService, ImageService imageService) {
         super(appDaoService, opencartDaoService, scraperDataUpdateService, translateService, fileService);
         this.appDaoService = appDaoService;
         this.opencartDaoService = opencartDaoService;
         this.translateService = translateService;
         this.fileService = fileService;
         this.updateDataService = updateDataService;
+        this.imageService = imageService;
     }
 
 
@@ -90,7 +77,9 @@ public class ParserServiceHator extends ParserServiceAbstract {
 
             List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
 
+
             List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
+
 
             List<ProductOpencart> fullProductsData = getFullProductsData(productsFromSite, supplierApp);
 
@@ -290,89 +279,22 @@ public class ParserServiceHator extends ParserServiceAbstract {
 
     }
 
-    public ProductOpencart settingOptionsOpencart(WebDriver driver, ProductOpencart productOpencart, SupplierApp supplierApp) {
+    public ProductOpencart settingOptionsOpencart(Document doc, ProductOpencart productOpencart, SupplierApp supplierApp) {
 
         try {
 
-            waitScripts(driver);
-            List<OptionDto> optionDtoWithMargin = setOptions(driver, productOpencart);
+            List<OptionDto> optionDtoList = setOptions(doc, productOpencart);
             log.info("ACTUAL PRODUCT DATA = SKU: {}, PRICE: {}, PP: {}", productOpencart.getSku(), productOpencart.getPrice(), productOpencart.getProductProfileApp().getPrice());
-            List<OptionValuesDto> optionValueDtoWithMargin = new ArrayList<>();
-            optionDtoWithMargin.stream().forEach(o -> optionValueDtoWithMargin.addAll(o.getValues()));
-
-            List<OptionDto> optionsDtoList = driver.findElements(By.xpath("//div[@id='fm-product-options-box']//div[@class='form-group']"))
-                    .stream()
-                    .map(eop -> {
-                        moveToElement(eop, driver, 500);
-                        OptionDto optionDto = new OptionDto();
-                        String optionTitle = eop.findElement(By.xpath(".//label[@class='fm-control-label']")).getText().replaceAll("\\*", "").trim();
-                        log.info("Option title: {}", optionTitle);
-                        optionDto.setName(optionTitle);
-                        WebElement optionElement = eop.findElement(By.xpath(".//div[starts-with(@id, 'input-option')]"));
-                        String optionsCode = optionElement.getAttribute("id").replaceAll("\\D", "");
-                        log.info("Options code: {}", optionsCode);
-                        optionDto.setNameCode(optionsCode);
-
-                        List<OptionValuesDto> optionValues = optionElement.findElements(By.xpath(".//label"))
-                                .stream()
-                                .map(ol -> {
-                                    OptionValuesDto optionValuesDto = new OptionValuesDto();
-                                    List<WebElement> imagesOption = ol.findElements(By.xpath(".//img"));
-                                    List<WebElement> fontsOption = ol.findElements(By.xpath(".//font"));
-                                    String optionValueTitle = "";
-                                    if (!imagesOption.isEmpty()) {
-                                        WebElement imageElement = imagesOption.get(0);
-                                        optionValueTitle = imageElement.getAttribute("alt");
-                                        String optionImageUrl = imageElement.getAttribute("src");
-
-                                        String optionImageName = optionImageUrl.substring(optionImageUrl.lastIndexOf("/") + 1);
-
-                                        optionImageName = URLDecoder.decode(optionImageName);
-
-                                        String optionImgDB = AppConstant.PART_DIR_OC_IMAGE.concat(optionImageName);
-
-                                        log.info("Option image url: {}", optionImageUrl);
-                                        log.info("Option image name: {}", optionImageName);
-                                        log.info("Option image db name: {}", optionImgDB);
-                                        optionValuesDto.setDbpathImage(optionImgDB);
-                                        downloadImage(optionImageUrl, optionImgDB);
-                                    } else if (!fontsOption.isEmpty()) {
-                                        optionValueTitle = fontsOption.get(0).getText().trim();
-                                    } else {
-                                        optionValueTitle = ol.getAttribute("data-original-title");
-                                    }
-                                    optionValuesDto.setValue(optionValueTitle);
-                                    log.info("Option value title: {}", optionValueTitle);
-
-                                    String optionValueCode = ol.findElement(By.xpath(".//input")).getAttribute("value");
-                                    optionValuesDto.setValueCode(optionValueCode);
-                                    log.info("Option value code: {}", optionValueCode);
 
 
-                                    if (optionValueDtoWithMargin.contains(optionValuesDto)) {
-                                        OptionValuesDto valueWithmargin = optionValueDtoWithMargin.get(optionValueDtoWithMargin.indexOf(optionValuesDto));
-                                        optionValuesDto.setMargin(valueWithmargin.getMargin());
-                                    }
-
-
-                                    return optionValuesDto;
-                                })
-                                .collect(Collectors.toList());
-
-
-                        optionDto.setValues(optionValues);
-                        return optionDto;
-                    })
-                    .collect(Collectors.toList());
-
-
-            List<OptionOpencart> optionsOpencartList = optionsDtoList
+            List<OptionOpencart> optionsOpencartList = optionDtoList
                     .stream()
                     .map(o -> {
-
+                        AtomicInteger countSort = new AtomicInteger();
                         List<OptionValueOpencart> optionValues = o.getValues()
                                 .stream()
                                 .map(v -> {
+                                    int sort = v.isDefault() ? 0 : countSort.addAndGet(1);
                                     OptionValueDescriptionOpencart valueDescription = new OptionValueDescriptionOpencart();
                                     valueDescription.setName(v.getValue());
 
@@ -380,6 +302,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                     productOptionValueOpencart.setPrice(new BigDecimal(v.getMargin()));
 
                                     OptionValueOpencart optionValue = new OptionValueOpencart();
+                                    optionValue.setSortOrder(sort);
                                     optionValue.setImage(v.getDbpathImage());
                                     optionValue.setDescriptionValue(Collections.singletonList(valueDescription));
                                     optionValue.setProductOptionValueOpencart(productOptionValueOpencart);
@@ -424,177 +347,160 @@ public class ParserServiceHator extends ParserServiceAbstract {
         return productOpencart;
     }
 
-    public List<OptionDto> setOptions(WebDriver driver, ProductOpencart productOpencart) {
-        String pageSource = driver.getPageSource();
-        int idxStart = pageSource.indexOf("\"ro\":");
-        int idxEnd = pageSource.indexOf("\"options_ids\":");
-        log.info("IDX s: {} | e: {}", idxStart, idxEnd);
-        String jsAllDat = pageSource.substring(idxStart, idxEnd);
+    public List<OptionDto> setOptions(Document doc, ProductOpencart productOpencart) {
 
-        List<String> hatorDataStringList = new ArrayList<>();
-        int idxBegin = 0;
-        int idxFinish = 0;
-        boolean hasNext = true;
+        String multiImageOption = "Комбінація кольорів";
 
-        do {
-            idxBegin = jsAllDat.indexOf("{\"relatedoptions_id\"", idxFinish);
-            idxFinish = jsAllDat.indexOf("\"specials\":", idxBegin);
-            log.info("idx 1: [{}] 2: [{}]", idxBegin, idxFinish);
-            if (idxBegin == -1 || idxFinish == -1) {
-                hasNext = false;
-            } else {
-                String substring = jsAllDat.substring(idxBegin, idxFinish);
-                hatorDataStringList.add(substring);
-                log.info("ONCE result: {}", substring);
-            }
+        Elements optionMainElement = doc.select("div.field_inner_node_process.field_inner_node_process_field_products_color.field_inner_node_process_field_products_color_products");
 
-        } while (hasNext);
+        Elements optionElements = optionMainElement.select("div.entity.entity-field-collection-item.field-collection-item-field-products-color");
+        log.info("Options elements size: {}", optionElements.size());
 
+        List<OptionDto> setColorOptionList = new ArrayList<>();
 
-        List<OptionDto> optionDtoList = new ArrayList<>();
-
-        String subStringId = "\"relatedoptions_id\":\"";
-        String subStringPrice = "\"price\":\"";
-        String subStringOption = "\"options\":{";
-        String subStringOptionEnd = "\"discounts\"";
-        List<HatorProductDto> hatorProductDtoList = hatorDataStringList
+        List<OptionDto> optionDtoList = optionElements
                 .stream()
-                .map(hs -> {
-                    log.info("NEW PRODUCT");
-                    int idxId = hs.indexOf(subStringId) + subStringId.length();
-                    int idxPoint = hs.indexOf(",", idxId) - 1;
-                    String subId = hs.substring(idxId, idxPoint);
-                    log.info("subId: {}", subId);
+                .map(oe -> {
 
-                    int idxPrice = hs.indexOf(subStringPrice) + subStringPrice.length();
-                    idxPoint = hs.indexOf(",", idxPrice) - 1;
-                    String subPrice = hs.substring(idxPrice, idxPoint);
-                    log.info("subPrice: {}", subPrice);
 
-                    int idxOption = hs.indexOf(subStringOption) + subStringOption.length();
-                    idxPoint = hs.indexOf(subStringOptionEnd, idxOption);
-                    String subOption = hs.substring(idxOption, idxPoint);
-                    log.info("subOption: {}", subOption);
+                    OptionDto optionDto = new OptionDto();
+                    AtomicInteger countOption = new AtomicInteger();
 
-                    List<String> stringOptions = Arrays.asList(subOption.split(","));
-                    List<OptionValuesDto> optionValuesDtoList = new ArrayList<>();
-                    List<HatorOptionDto> hatorOptionDtoList = stringOptions
+                    String optionTitleCode = oe.select("div.field.field-name-field-products-color-f1.field-type-text.field-label-hidden").text().replaceAll(":", "");
+                    log.info("Option title/code: {}", optionTitleCode);
+
+                    boolean isSetColor = optionTitleCode.contains(multiImageOption);
+
+
+                    optionDto.setName(optionTitleCode);
+                    optionDto.setNameCode(optionTitleCode);
+
+
+                    Elements hexRows = oe.select("div.field.field-name-field-products-color-f2.field-type-jquery-colorpicker.field-label-hidden");
+
+                    hexRows
+                            .forEach(hr -> {
+                                Elements hexValues = hr.select("div[id^=jquery_colorpicker_color_display]");
+                                hexValues
+                                        .forEach(hexValue -> {
+                                            String hexValueClass = hexValue.attr("class");
+                                            int idxHex = hexValueClass.lastIndexOf("_");
+                                            if (idxHex != -1) {
+
+
+                                                String hexImageText = hexValueClass.substring(idxHex + 1);
+                                                String optionImage = imageService.createOptionImage("#" + hexImageText);
+
+                                                OptionValuesDto optionValue = new OptionValuesDto();
+                                                optionValue.setDbpathImage(optionImage);
+                                                optionValue.setValue(hexImageText);
+                                                optionValue.setValueCode(hexValueClass);
+                                                if (countOption.get() == 0) {
+                                                    optionValue.setDefault(true);
+                                                }
+                                                optionDto.getValues().add(optionValue);
+//                                                log.info("    Option values ( HEX color) : {}", optionValue);
+                                                countOption.addAndGet(1);
+                                            }
+                                        });
+                            });
+
+
+                    Elements imageRows = oe.select("div.field.field-name-field-products-color-f3.field-type-image.field-label-hidden");
+
+                    imageRows
+                            .forEach(ir -> {
+                                Elements imageValues = ir.select("img");
+
+                                imageValues
+                                        .forEach(imageValue -> {
+                                            String src = imageValue.attr("src");
+                                            int idxStartTitle = src.lastIndexOf("/") + 1;
+                                            int idxEndTitle = src.indexOf("?");
+
+
+                                            if (idxStartTitle != -1 && idxEndTitle != -1) {
+                                                String imageName = src.substring(idxStartTitle, idxEndTitle);
+                                                String valueTitleCode = imageName.substring(0, imageName.indexOf("."));
+                                                String dbImage = AppConstant.PART_DIR_OC_IMAGE.concat(imageName);
+
+                                                OptionValuesDto optionValue = new OptionValuesDto();
+                                                optionValue.setDbpathImage(dbImage);
+                                                optionValue.setValue(valueTitleCode);
+                                                optionValue.setValueCode(valueTitleCode);
+                                                if (countOption.get() == 0) {
+                                                    optionValue.setDefault(true);
+                                                }
+
+                                                fileService.downloadImg(src, dbImage);
+                                                optionDto.getValues().add(optionValue);
+
+//                                                log.info("    Option values ( IMG name) : {}", optionValue);
+                                                countOption.addAndGet(1);
+                                            }
+
+                                        });
+                            });
+
+
+                    if (isSetColor) {
+                        setColorOptionList.add(optionDto);
+                        return null;
+                    } else {
+                        return optionDto;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+
+
+        OptionDto setColorOption = new OptionDto();
+        setColorOption.setNameCode(multiImageOption);
+        setColorOption.setName(multiImageOption);
+
+        AtomicInteger countSetColot = new AtomicInteger();
+
+        setColorOptionList
+                .forEach(sco -> {
+
+                    OptionValuesDto setColorOptionValuesDto = new OptionValuesDto();
+                    boolean isDefault = countSetColot.addAndGet(1) == 1;
+                    String name = sco.getName().concat(" - ").concat(productOpencart.getSku());
+                    setColorOptionValuesDto.setValue(name);
+                    setColorOptionValuesDto.setDefault(isDefault);
+
+                    String optionValueCode = sco.getValues()
                             .stream()
-                            .map(so -> {
-                                String kay = so.substring(0, so.indexOf(":")).replaceAll("\\D", "");
-                                String value = so.substring(so.indexOf(":")).replaceAll("\\D", "");
-                                log.info("Option K: [{}], V: [{}]", kay, value);
+                            .map(OptionValuesDto::getValueCode)
+                            .collect(Collectors.joining("-"));
 
-
-                                OptionDto optionDto = new OptionDto();
-                                optionDto.setNameCode(kay);
-                                OptionValuesDto optionValuesDto = new OptionValuesDto();
-                                optionValuesDto.setValueCode(value);
-                                optionValuesDtoList.add(optionValuesDto);
-                                boolean hasOption = optionDtoList.contains(optionDto);
-                                if (hasOption) {
-                                    OptionDto optionDtoFromList = optionDtoList.get(optionDtoList.indexOf(optionDto));
-                                    boolean hasValue = optionDtoFromList.getValues().contains(optionValuesDto);
-                                    if (!hasValue) {
-                                        optionDtoFromList.getValues().add(optionValuesDto);
-                                    }
-                                } else {
-                                    optionDto.getValues().add(optionValuesDto);
-                                    optionDtoList.add(optionDto);
-                                }
-
-
-                                return new HatorOptionDto(kay, value);
+                    List<String> imageList = sco.getValues()
+                            .stream()
+                            .map(o -> {
+                                String dbpathImage = o.getDbpathImage();
+                                String imageName = dbpathImage.substring(dbpathImage.lastIndexOf("/") + 1);
+                                return imageName;
                             })
                             .collect(Collectors.toList());
-                    return new HatorProductDto(Integer.parseInt(subId), (int) Double.parseDouble(subPrice), hatorOptionDtoList, optionValuesDtoList);
-                })
-                .collect(Collectors.toList());
 
-        List<HatorProductDto> sortedProductDto = hatorProductDtoList
-                .stream()
-                .sorted(Comparator.comparingInt(HatorProductDto::getPrice))
-                .collect(Collectors.toList());
+                    String optionMultiImage = imageService.createOptionMultiImage(imageList);
 
 
-        HatorProductDto defaultHatorProductDto = sortedProductDto.get(0);
+                    setColorOptionValuesDto.setValueCode(optionValueCode);
 
 
-        defaultHatorProductDto.getHatorOptionDtoList()
-                .forEach(ho -> {
-                    optionDtoList
-                            .forEach(o -> {
-                                boolean isDef = o.getNameCode().equals(ho.getOptionCode());
-                                if (isDef) {
-                                    o.getValues()
-                                            .forEach(v -> {
-                                                boolean isDefVal = v.getValueCode().equals(ho.getValueCode());
-                                                if (isDefVal) {
-                                                    v.setDefault(true);
-                                                }
-                                            });
-                                }
-                            });
-                });
+                    setColorOptionValuesDto.setDbpathImage(optionMultiImage);
+                    setColorOption.getValues().add(setColorOptionValuesDto);
 
-        log.info("Hator DTO DEFAULT: {}", defaultHatorProductDto);
-        List<OptionValuesDto> defaultOptionValues = optionDtoList
-                .stream()
-                .map(od -> od.getValues().stream().filter(OptionValuesDto::isDefault).findFirst().orElse(null))
-                .collect(Collectors.toList());
-        log.info("DEF VALUES: {}", defaultOptionValues);
-
-
-        int priceDef = defaultHatorProductDto.getPrice();
-
-        BigDecimal bigDecimalPrice = new BigDecimal(priceDef).setScale(4);
-        productOpencart.setPrice(bigDecimalPrice);
-        productOpencart.setItuaOriginalPrice(bigDecimalPrice);
-
-
-        optionDtoList
-                .forEach(od -> {
-                    OptionValuesDto optionValuesDtoDefault = od.getValues().stream().filter(OptionValuesDto::isDefault).findFirst().orElse(null);
-
-                    od.getValues().stream()
-                            .filter(ovd -> !ovd.isDefault())
-                            .forEach(ovd -> {
-
-                                List<OptionValuesDto> optionCheckedList = defaultOptionValues
-                                        .stream()
-                                        .filter(dov -> !dov.equals(optionValuesDtoDefault))
-                                        .collect(Collectors.toList());
-
-                                optionCheckedList.add(ovd);
-
-                                log.info("checked list: {}", optionCheckedList);
-
-                                HatorProductDto equeldHatorProduct = hatorProductDtoList
-                                        .stream()
-                                        .filter(h -> {
-                                            List<OptionValuesDto> collect = h.getOptionValuesDtoList()
-                                                    .stream()
-                                                    .filter(optionCheckedList::contains)
-                                                    .collect(Collectors.toList());
-                                            log.info("Contains colect option: {}", collect.size());
-                                            return collect.size() == optionCheckedList.size();
-                                        })
-                                        .findFirst()
-                                        .orElse(null);
-
-                                if (Objects.nonNull(equeldHatorProduct)) {
-                                    int priceHatorDto = equeldHatorProduct.getPrice();
-                                    int actualPrice = priceHatorDto - priceDef;
-                                    ovd.setMargin(actualPrice);
-                                }
-                                log.info("equeldHatorProduct: {}", equeldHatorProduct);
-
-                            });
                 });
 
 
-        log.info("Options DTO: \n{}", optionDtoList);
+        optionDtoList.add(setColorOption);
+
+
         return optionDtoList;
+
     }
 
 
@@ -602,16 +508,17 @@ public class ParserServiceHator extends ParserServiceAbstract {
     public List<CategoryOpencart> getSiteCategories(SupplierApp supplierApp) {
 
         List<CategoryOpencart> supplierCategoryOpencartDB = supplierApp.getCategoryOpencartDB();
-        Document doc = getWebDocument(SUPPLIER_URL, new HashMap<>());
+        Document doc = getWebDocument(SUPPLIER_ALL_CATALOG, new HashMap<>());
+
 
         AtomicInteger countMainCategory = new AtomicInteger();
         if (Objects.nonNull(doc)) {
-            List<CategoryOpencart> mainCategories = doc.select("ul#oct-menu-ul > li.oct-menu-li")
+            List<CategoryOpencart> mainCategories = doc.select("div#sidebar-first ul.top_list > li.top_li")
                     .stream()
-                    .map(ec -> {
+                    .map(li -> {
 
-
-                        String url = ec.select("a").first().attr("href");
+                        Elements ec = li.select(" > a");
+                        String url = SUPPLIER_URL_DEFAULT.concat(ec.select("a").first().attr("href"));
                         String title = ec.select("a").first().text().trim();
                         log.info("{}. Main site category title: {}, url: {}", countMainCategory.addAndGet(1), title, url);
                         CategoryOpencart categoryOpencart = new CategoryOpencart.Builder()
@@ -621,6 +528,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                 .withTop(false)
                                 .withStatus(false)
                                 .build();
+                        categoryOpencart.setCategoryElement(li);
                         CategoryDescriptionOpencart description = new CategoryDescriptionOpencart.Builder()
                                 .withName(title)
                                 .withDescription(supplierApp.getName())
@@ -633,6 +541,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
                     .collect(Collectors.toList());
 
             log.info("Main category size: {}", mainCategories.size());
+
 
             List<CategoryOpencart> siteCategoryStructure = mainCategories
                     .stream()
@@ -681,54 +590,53 @@ public class ParserServiceHator extends ParserServiceAbstract {
 
                     List<CategoryOpencart> parentsCategories = getParentsCategories(c, categoriesWithProduct);
                     Document doc = getWebDocument(url, new HashMap<>());
-
+                    log.info("url: {}", url);
                     if (Objects.nonNull(doc)) {
                         boolean goNext = true;
-                        int countPage = 1;
+                        int countPage = 0;
 
                         while (goNext) {
                             try {
 
-                                if (countPage != 1) {
+                                if (countPage != 0) {
                                     String newUrlPage = url.concat(URL_PART_PAGE).concat(String.valueOf(countPage));
                                     doc = getWebDocument(newUrlPage, new HashMap<>());
+                                    log.info("url: {}", newUrlPage);
                                 }
 
                                 if (Objects.nonNull(doc)) {
 
-                                    Elements elementsProduct = doc.select("div.product-layout");
+                                    Elements elementsProduct = doc.select("div.view-content div.row_inner");
                                     log.info("Count product: {} on page: {}", elementsProduct.size(), countPage);
+
+                                    //  TODO continue ...
                                     elementsProduct
                                             .stream()
                                             .map(ep -> {
                                                 log.info("");
-                                                String urlProduct = ep.select("div.fm-category-product-caption > div.fm-module-title > a").attr("href");
+                                                String urlProduct = SUPPLIER_URL_DEFAULT.concat(ep.select("div.views-field-field-node-img a").attr("href"));
                                                 log.info("Product url: {}", urlProduct);
-                                                String title = ep.select("div.fm-category-product-caption > div.fm-module-title > a").text();
+                                                String title = ep.select("div.views-field-title-field a").text();
                                                 log.info("Product title: {}", title);
-                                                String sku = ep.select("div.fm-category-product-model").text().replaceAll("Код товара:", "").trim();
+
+                                                String sku = ep.select("div.views-field-field-products-art div.field-content").text().replaceAll("Код товара:", "").trim();
                                                 log.info("Product sku: {}", sku);
+
                                                 String model = generateModel(sku, "0000");
                                                 log.info("Product model: {}", model);
-                                                String textPrice = ep.select("span.fm-module-price-new").text().replaceAll("\\D", "");
+
+                                                String textPrice = ep.select("div.views-field-field-products-price div.val").text().replaceAll("\\D", "");
                                                 BigDecimal price = new BigDecimal("0");
                                                 if (!textPrice.isEmpty()) {
                                                     price = new BigDecimal(textPrice);
                                                 }
                                                 log.info("Product price: {}", price);
-                                                String urlImage = ep.select("img[data-srcset]").get(0).attr("src").replaceAll("228x228", "1000x1000");
-                                                log.info("Product url image: {}", urlImage);
-                                                String imageName = urlImage.substring(urlImage.lastIndexOf("/") + 1);
 
-                                                imageName = sku.concat("-").concat(imageName);
-                                                log.info("Product image name: {}", imageName);
-                                                String imageDBName = AppConstant.PART_DIR_OC_IMAGE.concat(imageName);
-                                                log.info("Product image db name: {}", imageDBName);
-                                                downloadImage(urlImage, imageDBName);
 
                                                 ProductProfileApp productProfileApp = new ProductProfileApp.Builder()
                                                         .withUrl(urlProduct)
                                                         .withSku(sku)
+                                                        .withTitle(title)
                                                         .withPrice(price)
                                                         .withSupplierId(supplierApp.getSupplierAppId())
                                                         .withSupplierApp(supplierApp)
@@ -740,7 +648,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                                         .withUrlProduct(urlProduct)
                                                         .withModel(model)
                                                         .withSku(sku)
-                                                        .withImage(imageDBName)
+                                                        .withTitle(title)
                                                         .withPrice(price)
                                                         .withItuaOriginalPrice(price)
                                                         .withJan(supplierApp.getName())
@@ -761,14 +669,14 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                 log.warn("Problem iterate page", e);
                             } finally {
                                 countPage++;
-                                Elements ePages = doc.select("ul.pagination li");
+                                Elements ePages = doc.select("ul.pager li");
                                 List<Integer> pages = ePages
                                         .stream()
                                         .map(e -> e.text().replaceAll("\\D", ""))
                                         .filter(s -> !s.isEmpty())
                                         .map(Integer::parseInt)
                                         .collect(Collectors.toList());
-                                goNext = pages.contains(countPage);
+                                goNext = pages.contains(countPage + 1);
                             }
 
                         }
@@ -782,52 +690,26 @@ public class ParserServiceHator extends ParserServiceAbstract {
     @Override
     public List<ProductOpencart> getFullProductsData(List<ProductOpencart> products, SupplierApp supplierApp) {
 
-        WebDriverManager.chromedriver().setup();
-        WebDriverManager.chromedriver().setup();
-        ChromeOptions options = new ChromeOptions();
-        options.setHeadless(true);
-        options.addArguments("--disable-extensions");
-        options.addArguments("--disable-gpu");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--window-size=1920x1080");
-
-        WebDriver driver = new ChromeDriver(options);
-
-        Dimension dm = new Dimension(1552, 849);
-        driver.manage().window().setSize(dm);
 
         AtomicInteger count = new AtomicInteger();
 
         List<ProductOpencart> fullProducts = products
                 .stream()
+                .limit(1)
                 .peek(prod -> {
 
                     String urlProduct = prod.getUrlProduct();
                     log.info("{}. Get data from product url: {}", count.addAndGet(1), urlProduct);
+                    Document doc = getWebDocument(urlProduct, new HashMap<>());
 
                     try {
-                        driver.get(urlProduct);
-                        WebDriverWait webDriverWait = new WebDriverWait(driver, 10, 500);
-                        WebElement ukLanguageElement = webDriverWait
-                                .until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@title='Ukrainian']")));
 
-                        new Actions(driver)
-                                .moveToElement(ukLanguageElement)
-                                .pause(Duration.ofSeconds(1))
-                                .click()
-                                .pause(Duration.ofSeconds(1))
-                                .perform();
-                        waitTranslate(driver);
-
-
-                        String title = webDriverWait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//h1[@class='fm-main-title fm-page-title']"))).getText();
-                        log.info("title: {}", title);
-                        WebElement descriptionElement = webDriverWait
-                                .until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@class='fm-product-description-cont']")));
-                        moveToElement(descriptionElement, driver, 200);
-                        String description = descriptionElement.getText();
-                        description = getDescription(description);
+                        String title = prod.getTitle();
+                        Elements elementDescription = doc.select("div.body_wrap div.field-items");
+                        String description = "";
+                        if (!elementDescription.isEmpty()) {
+                            description = getDescription(elementDescription.get(0));
+                        }
 
                         ProductDescriptionOpencart descriptionOpencart = new ProductDescriptionOpencart.Builder()
                                 .withName(title)
@@ -848,70 +730,77 @@ public class ParserServiceHator extends ParserServiceAbstract {
 
                         log.info("Product price for profile: {}", prod.getPrice());
 
-                        List<WebElement> attributeElements = driver.findElements(By.xpath("//div[@id='fm-product-attributes-top']"));
-                        if (!attributeElements.isEmpty()) {
-                            moveToElement(attributeElements.get(0), driver, 200);
-                            List<AttributeWrapper> attributes = attributeElements.get(0).findElements(By.xpath(".//div[contains(@class, 'fm-product-attributtes-item')]"))
-                                    .stream()
-                                    .map(row -> {
-                                        List<WebElement> attrData = row.findElements(By.xpath(".//span"));
-                                        if (attrData.size() == 2) {
-                                            String key = attrData.get(0).getText().trim();
-                                            String value = attrData.get(1).getText().trim();
-                                            log.info("Key: {}, value: {}", key, value);
-                                            AttributeWrapper attributeWrapper = new AttributeWrapper(key, value, null);
-                                            AttributeWrapper attribute = getAttribute(attributeWrapper, supplierApp, savedProductProfile);
-                                            return attribute;
-                                        } else {
-                                            return null;
-                                        }
-                                    })
-                                    .filter(Objects::nonNull)
-                                    .collect(Collectors.toList());
-                            prod.getAttributesWrapper().addAll(attributes);
-                        }
+
+                        //  TODO attr
+//                        List<WebElement> attributeElements = driver.findElements(By.xpath("//div[@id='fm-product-attributes-top']"));
+//                        if (!attributeElements.isEmpty()) {
+//                            moveToElement(attributeElements.get(0), driver, 200);
+//                            List<AttributeWrapper> attributes = attributeElements.get(0).findElements(By.xpath(".//div[contains(@class, 'fm-product-attributtes-item')]"))
+//                                    .stream()
+//                                    .map(row -> {
+//                                        List<WebElement> attrData = row.findElements(By.xpath(".//span"));
+//                                        if (attrData.size() == 2) {
+//                                            String key = attrData.get(0).getText().trim();
+//                                            String value = attrData.get(1).getText().trim();
+//                                            log.info("Key: {}, value: {}", key, value);
+//                                            AttributeWrapper attributeWrapper = new AttributeWrapper(key, value, null);
+//                                            AttributeWrapper attribute = getAttribute(attributeWrapper, supplierApp, savedProductProfile);
+//                                            return attribute;
+//                                        } else {
+//                                            return null;
+//                                        }
+//                                    })
+//                                    .filter(Objects::nonNull)
+//                                    .collect(Collectors.toList());
+//                            prod.getAttributesWrapper().addAll(attributes);
+//                        }
 
 
-                        List<WebElement> optionsForm = driver.findElements(By.xpath("//div[@class='form-group']"));
+                        Elements optionsForm = doc.select("div.field_inner_node_process_field_products_color_products");
                         if (!optionsForm.isEmpty()) {
-                            settingOptionsOpencart(driver, prod, supplierApp);
+                            settingOptionsOpencart(doc, prod, supplierApp);
                         }
 
 
                         setManufacturer(prod, supplierApp);
                         setPriceWithMarkup(prod);
 
-                        List<WebElement> imageElements = driver.findElements(By.xpath("//div[@id='image-additional']//a[@data-href and contains(@data-href, '1000x1000')]"));
+                        Elements imageElements = doc.select("a.photoswipe > img");
                         log.info("Images count: {}", imageElements.size());
+                        String partPathImage = " https://www.anshar.com.ua/sites/default/files/";
+                        String finishImage = "/public/";
 
-                        List<String> stringUIrlImageList = new ArrayList<>();
                         if (imageElements.size() > 0) {
                             AtomicInteger countImg = new AtomicInteger();
                             List<ImageOpencart> productImages = imageElements
                                     .stream()
                                     .map(i -> {
-                                        String fullUrl = i.getAttribute("data-href");
-                                        if (!stringUIrlImageList.contains(fullUrl)) {
-                                            stringUIrlImageList.add(fullUrl);
-                                            int imageCount = countImg.addAndGet(1);
-                                            log.info("Image url: {}", fullUrl);
-                                            String imgName = fullUrl.substring(fullUrl.lastIndexOf("/") + 1);
-                                            imgName = prod.getSku().concat("-").concat(imgName);
+                                        String src = i.attr("src");
+                                        src = partPathImage.concat(src.substring(src.indexOf(finishImage) + finishImage.length(), src.indexOf("?")));
+                                        log.info("src: {}", src);
+
+                                        if (countImg.get() == 0) {
+                                            log.info("Image url: {}", src);
+                                            String imgName = prod.getSku().concat("_" + countImg.addAndGet(1)).concat(".gif");
                                             log.info("Image name: {}", imgName);
                                             String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
                                             log.info("Image DB name: {}", dbImgPath);
-                                            if (!prod.getImage().equals(dbImgPath)) {
-                                                downloadImage(fullUrl, dbImgPath);
-                                                return new ImageOpencart.Builder()
-                                                        .withImage(dbImgPath)
-                                                        .withSortOrder(imageCount)
-                                                        .build();
-                                            } else {
-                                                return null;
-                                            }
-                                        } else {
+                                            downloadImage(src, dbImgPath);
+                                            prod.setImage(dbImgPath);
                                             return null;
+                                        } else {
+                                            log.info("Image url: {}", src);
+                                            String imgName = prod.getSku().concat("_" + countImg.addAndGet(1)).concat(".gif");
+                                            log.info("Image name: {}", imgName);
+                                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                            log.info("Image DB name: {}", dbImgPath);
+                                            downloadImage(src, dbImgPath);
+                                            return new ImageOpencart.Builder()
+                                                    .withImage(dbImgPath)
+                                                    .withSortOrder(countImg.get())
+                                                    .build();
                                         }
+
                                     })
                                     .filter(Objects::nonNull)
                                     .collect(Collectors.toList());
@@ -933,196 +822,9 @@ public class ParserServiceHator extends ParserServiceAbstract {
                 .filter(p -> !p.getSku().isEmpty())
                 .collect(Collectors.toList());
 
-        try {
-            driver.close();
-            driver.quit();
-        } catch (Exception e) {
-            log.warn("Exception close -> quite dricer.", e);
-        }
-
         return fullProducts;
     }
 
-    public void dataDuplicateProduct() {
-        SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
-        List<ProductProfileApp> productProfilesApp = supplierApp.getProductProfilesApp();
-
-        List<ProductProfileApp> unicList = productProfilesApp
-                .stream()
-                .distinct()
-                .collect(Collectors.toList());
-
-        List<ProductProfileApp> collect = productProfilesApp
-                .stream()
-                .filter(pp -> {
-                    int productProfileId = pp.getProductProfileId();
-                    ProductProfileApp prodileResult = unicList
-                            .stream()
-                            .filter(upp -> productProfileId == upp.getProductProfileId())
-                            .findFirst()
-                            .orElse(null);
-                    return Objects.isNull(prodileResult);
-                })
-                .collect(Collectors.toList());
-
-        collect.forEach(c -> {
-            int productProfileId = c.getProductProfileId();
-
-            appDaoService.deleteProfileAttributeByProfileId(productProfileId);
-            appDaoService.deleteOptionByProfileId(productProfileId);
-            appDaoService.deleteProfileById(productProfileId);
-        });
-
-    }
-
-
-    public void updateImages() {
-
-        WebDriverManager.chromedriver().setup();
-        WebDriverManager.chromedriver().setup();
-        ChromeOptions options = new ChromeOptions();
-        options.setHeadless(true);
-        options.addArguments("--disable-extensions");
-        options.addArguments("--disable-gpu");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--window-size=1920x1080");
-
-        WebDriver driver = new ChromeDriver(options);
-
-        Dimension dm = new Dimension(1552, 849);
-        driver.manage().window().setSize(dm);
-
-        SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
-        List<ProductOpencart> productOpencartList = opencartDaoService.getAllProductOpencartBySupplierAppName(supplierApp.getName());
-
-        List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
-        List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
-
-        productsFromSite
-                .stream()
-                .forEach(p -> {
-
-                    try {
-                        String url = p.getUrlProduct();
-                        String sku = p.getSku();
-
-                        ProductOpencart searchProductOpencart = productOpencartList
-                                .stream()
-                                .filter(pdb -> pdb.getSku().equals(sku))
-                                .findFirst()
-                                .orElse(null);
-
-                        if (Objects.nonNull(searchProductOpencart)) {
-                            log.info("URL: {}", url);
-                            log.info("SKU: {}", sku);
-
-
-                            driver.get(url);
-                            String mainImageName = searchProductOpencart.getImage().replaceAll("catalog/app/", "");
-                            waitScripts(driver);
-                            TimeUnit.SECONDS.sleep(2);
-
-                            List<WebElement> imageElements = new WebDriverWait(driver, 10, 500)
-                                    .until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.xpath("//div[@id='image-additional']//a[@data-href and contains(@data-href, '1000x1000')]")));
-                            log.info("Images count: {}", imageElements.size());
-
-
-                            List<String> stringUIrlImageList = new ArrayList<>();
-                            if (imageElements.size() > 0) {
-                                AtomicInteger countImg = new AtomicInteger();
-                                List<ImageOpencart> productImages = imageElements
-                                        .stream()
-                                        .map(i -> {
-                                            try {
-
-
-                                                String fullUrl = i.getAttribute("data-href");
-                                                if (!stringUIrlImageList.contains(fullUrl) && !fullUrl.contains(mainImageName)) {
-                                                    stringUIrlImageList.add(fullUrl);
-                                                    int imageCount = countImg.addAndGet(1);
-                                                    log.info("Image url: {}", fullUrl);
-                                                    String imgName = fullUrl.substring(fullUrl.lastIndexOf("/") + 1);
-                                                    imgName = searchProductOpencart.getSku().concat("-").concat(imgName);
-                                                    log.info("Image name: {}", imgName);
-                                                    String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
-                                                    log.info("Image DB name: {}", dbImgPath);
-                                                    if (!searchProductOpencart.getImage().equals(dbImgPath)) {
-                                                        downloadImage(fullUrl, dbImgPath);
-                                                        return new ImageOpencart.Builder()
-                                                                .withImage(dbImgPath)
-                                                                .withSortOrder(imageCount)
-                                                                .build();
-                                                    } else {
-                                                        return null;
-                                                    }
-                                                } else {
-                                                    return null;
-                                                }
-                                            } catch (Exception ex) {
-                                                log.warn("Exception update image inner.", ex);
-                                                return null;
-                                            }
-                                        })
-                                        .filter(Objects::nonNull)
-                                        .collect(Collectors.toList());
-
-                                opencartDaoService.deleteImageOpencartByProductId(searchProductOpencart.getId());
-                                log.info("Images: {}", productImages);
-                                productImages
-                                        .forEach(i -> {
-                                            i.setProductId(searchProductOpencart.getId());
-                                            opencartDaoService.saveImageOpencart(i);
-                                        });
-
-
-                            }
-                        }
-                    } catch (Exception ex) {
-                        log.warn("Exception update image.", ex);
-                    }
-
-
-                });
-
-
-        driver.close();
-        driver.quit();
-    }
-
-    public void moveToElement(WebElement elementForMove, WebDriver driver, int pose) {
-        new Actions(driver)
-                .moveToElement(elementForMove)
-                .pause(Duration.ofMillis(pose))
-                .perform();
-        waitScripts(driver);
-    }
-
-    public void waitTranslate(WebDriver driver) {
-        new WebDriverWait(driver, 10, 500).until((ExpectedCondition<Boolean>) webDriver -> {
-            boolean isAjaxDone = ((JavascriptExecutor) driver).executeScript("return jQuery.active == 0").equals(true);
-            return isAjaxDone;
-        });
-        Dimension body = driver.findElement(By.tagName("body")).getSize();
-        int height = body.getHeight();
-        log.info("Height: {}", height);
-        int count = 0;
-        int limit = 700;
-        while (count < height) {
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("window.scrollBy(0, " + limit + ")", "");
-            try {
-                TimeUnit.MILLISECONDS.sleep(300);
-            } catch (InterruptedException e) {
-            }
-            count += limit;
-        }
-        new WebDriverWait(driver, 10, 500).until((ExpectedCondition<Boolean>) webDriver -> {
-            boolean isAjaxDone = ((JavascriptExecutor) driver).executeScript("return jQuery.active == 0").equals(true);
-            return isAjaxDone;
-        });
-
-    }
 
     public void waitScripts(WebDriver driver) {
         new WebDriverWait(driver, 30, 500).until((ExpectedCondition<Boolean>) webDriver -> {
@@ -1132,24 +834,24 @@ public class ParserServiceHator extends ParserServiceAbstract {
     }
 
 
-    public String getDescription(String text) {
-        return wrapToHtml(text);
+    public String getDescription(Element descElement) {
+        String description = cleanDescription(descElement);
+        log.info("Desc: {}", description);
+        return wrapToHtml(description);
     }
 
 
     @Override
     public CategoryOpencart recursiveWalkSiteCategory(CategoryOpencart category) {
-        String url = category.getUrl();
-        Document doc = getWebDocument(url, new HashMap<>());
+
+        Element doc = category.getCategoryElement();
         if (Objects.nonNull(doc)) {
-
-
-            List<CategoryOpencart> subCategories = doc.select("a.subcat-item")
+            List<CategoryOpencart> subCategories = doc.select("ul.sub_list > li > a")
                     .stream()
                     .map(el -> {
-                        String subUrl = el.attr("href");
+                        String subUrl = SUPPLIER_URL_DEFAULT.concat(el.attr("href"));
                         String subTitle = el.text();
-                        log.info("    Sub category: {}", subTitle);
+                        log.info("    Sub category: {}, url: {}", subTitle, subUrl);
                         CategoryOpencart subCategory = new CategoryOpencart.Builder()
                                 .withUrl(subUrl)
                                 .withTop(false)
@@ -1170,9 +872,9 @@ public class ParserServiceHator extends ParserServiceAbstract {
                     })
                     .collect(Collectors.toList());
             category.getCategoriesOpencart().addAll(subCategories);
-
         }
         return category;
+
     }
 
 
