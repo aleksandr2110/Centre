@@ -66,11 +66,10 @@ public class ParserServiceNowystyl extends ParserServiceAbstract {
             List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
             List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
 
-            //  TODO test old prod
             OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
             checkPrice(opencartInfo, supplierApp);
-            List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
 
+            List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
 
             fullProductsData
                     .forEach(opencartDaoService::saveProductOpencart);
@@ -367,7 +366,7 @@ public class ParserServiceNowystyl extends ParserServiceAbstract {
 
                                                 String imgName = sku.concat("_").concat(String.valueOf(i.getPosition())).concat(fullUrl.substring(fullUrl.lastIndexOf(".")));
 
-                                                String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                                String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
                                                 downloadImage(fullUrl, dbImgPath);
 
                                                 if (i.getIsMain()) {
@@ -505,6 +504,7 @@ public class ParserServiceNowystyl extends ParserServiceAbstract {
                     opencartDaoService.updateModel(p);
                 });
     }
+
     public void updateModel() {
         SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
         List<ProductProfileApp> profiles = appDaoService.getAllProductProfileAppBySupplierId(supplierApp.getSupplierAppId());

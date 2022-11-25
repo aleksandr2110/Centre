@@ -36,4 +36,10 @@ class ParserServiceOscarTest {
     }
 
 
+    @Test
+    void downloadImages(){
+        parserServiceOscar.downloadImages();
+    }
+
+
 }

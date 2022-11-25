@@ -15,7 +15,16 @@ public class OptionDto {
     private String name;
     private int minOptionPrice;
     private String optionType;
+    private int required = 1;
     private List<OptionValuesDto> values = new ArrayList<>();
+
+    public OptionDto(String nameCode, String name, int minOptionPrice, String optionType, List<OptionValuesDto> values) {
+        this.nameCode = nameCode;
+        this.name = name;
+        this.minOptionPrice = minOptionPrice;
+        this.optionType = optionType;
+        this.values = values;
+    }
 
     @Override
     public String toString() {

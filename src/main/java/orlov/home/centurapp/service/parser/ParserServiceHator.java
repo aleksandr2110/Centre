@@ -92,8 +92,8 @@ public class ParserServiceHator extends ParserServiceAbstract {
 
             List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
 
-            List<ProductOpencart> fullProductsData = getFullProductsData(productsFromSite, supplierApp);
 
+            List<ProductOpencart> fullProductsData = getFullProductsData(productsFromSite, supplierApp);
 
             OpencartDto opencartInfo = getOpencartInfo(fullProductsData, supplierApp);
 
@@ -329,7 +329,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
 
                                         optionImageName = URLDecoder.decode(optionImageName);
 
-                                        String optionImgDB = AppConstant.PART_DIR_OC_IMAGE.concat(optionImageName);
+                                        String optionImgDB = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(optionImageName);
 
                                         log.info("Option image url: {}", optionImageUrl);
                                         log.info("Option image name: {}", optionImageName);
@@ -722,7 +722,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
 
                                                 imageName = sku.concat("-").concat(imageName);
                                                 log.info("Product image name: {}", imageName);
-                                                String imageDBName = AppConstant.PART_DIR_OC_IMAGE.concat(imageName);
+                                                String imageDBName = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
                                                 log.info("Product image db name: {}", imageDBName);
                                                 downloadImage(urlImage, imageDBName);
 
@@ -898,7 +898,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                             String imgName = fullUrl.substring(fullUrl.lastIndexOf("/") + 1);
                                             imgName = prod.getSku().concat("-").concat(imgName);
                                             log.info("Image name: {}", imgName);
-                                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
                                             log.info("Image DB name: {}", dbImgPath);
                                             if (!prod.getImage().equals(dbImgPath)) {
                                                 downloadImage(fullUrl, dbImgPath);
@@ -976,6 +976,46 @@ public class ParserServiceHator extends ParserServiceAbstract {
     }
 
 
+    public void changeFirstSecondImage() {
+
+        List<ProductOpencart> products = opencartDaoService.getAllProductOpencartBySupplierAppName(SUPPLIER_NAME);
+        log.info("Product hator count: {}", products.size());
+        products = products
+                .stream()
+                .map(p -> opencartDaoService.getProductOpencartWithImageById(p.getId()))
+                .collect(Collectors.toList());
+
+
+        products
+                .forEach(p -> {
+                    String sku = p.getSku();
+                    log.info("Sku: {}", sku);
+                    String image = p.getImage();
+                    log.info("Main image: {}", image);
+                    List<ImageOpencart> imagesOpencart = p.getImagesOpencart();
+                    log.info("Sub images size: {}", imagesOpencart.size());
+                    if (!imagesOpencart.isEmpty()) {
+                        List<ImageOpencart> sortedImages = imagesOpencart
+                                .stream()
+                                .sorted(Comparator.comparingInt(ImageOpencart::getSortOrder))
+                                .collect(Collectors.toList());
+
+                        ImageOpencart secondImage = sortedImages.get(0);
+
+                        p.setImage(secondImage.getImage());
+                        secondImage.setImage(image);
+
+                        opencartDaoService.updateMainProductImageOpencart(p);
+
+                        opencartDaoService.deleteImageByImageId(secondImage.getProductImageId());
+                        opencartDaoService.saveImageOpencart(secondImage);
+
+                    }
+                });
+
+
+    }
+
     public void updateImages() {
 
         WebDriverManager.chromedriver().setup();
@@ -1045,7 +1085,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                                     String imgName = fullUrl.substring(fullUrl.lastIndexOf("/") + 1);
                                                     imgName = searchProductOpencart.getSku().concat("-").concat(imgName);
                                                     log.info("Image name: {}", imgName);
-                                                    String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                                    String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
                                                     log.info("Image DB name: {}", dbImgPath);
                                                     if (!searchProductOpencart.getImage().equals(dbImgPath)) {
                                                         downloadImage(fullUrl, dbImgPath);

@@ -1,10 +1,19 @@
 package orlov.home.centurapp.service.parser;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
 import orlov.home.centurapp.dto.AttributeWrapper;
 import orlov.home.centurapp.dto.OpencartDto;
@@ -65,6 +74,7 @@ public class ParserServiceOscar extends ParserServiceAbstract {
 
             OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
             checkPrice(opencartInfo, supplierApp);
+
 
             List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
 
@@ -145,6 +155,58 @@ public class ParserServiceOscar extends ParserServiceAbstract {
 
         }
         return new ArrayList<>();
+
+    }
+
+    public void downloadImages() {
+
+        SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
+        List<ProductOpencart> productOpencartList = opencartDaoService.getAllProductOpencartBySupplierAppName(supplierApp.getName());
+
+        List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
+        List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
+
+        productsFromSite
+                .stream()
+                .forEach(p -> {
+
+                    try {
+                        String url = p.getUrlProduct();
+                        String sku = p.getSku();
+
+                        ProductOpencart searchProductOpencart = productOpencartList
+                                .stream()
+                                .filter(pdb -> pdb.getSku().equals(sku))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (Objects.nonNull(searchProductOpencart)) {
+                            log.info("URL: {}", url);
+                            log.info("SKU: {}", sku);
+
+
+                            String imgUrl = p.getUrlImage();
+                            log.info("Main imgUrl: {}", imgUrl);
+                            String format = imgUrl.substring(imgUrl.lastIndexOf("."));
+
+                            String imageName = p.getModel().concat("_main").concat(format);
+                            log.info("Main imageName: {}", imageName);
+                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
+                            log.info("Main dbImgPath: {}", dbImgPath);
+                            downloadImage(imgUrl, dbImgPath);
+                            p.setImage(dbImgPath);
+
+                            searchProductOpencart.setImage(dbImgPath);
+                            opencartDaoService.deleteImageOpencartByProductId(searchProductOpencart.getId());
+                            opencartDaoService.updateMainProductImageOpencart(searchProductOpencart);
+
+                        }
+                    } catch (Exception ex) {
+                        log.warn("Exception update image.", ex);
+                    }
+
+
+                });
 
     }
 
@@ -418,8 +480,8 @@ public class ParserServiceOscar extends ParserServiceAbstract {
                                             }
                                             log.info("Key: [{}]  Value: [{}]", keyAttr, valueAttr);
                                             AttributeWrapper attributeWrapper = new AttributeWrapper(keyAttr, valueAttr, null);
-                                           AttributeWrapper attribute = getAttribute(attributeWrapper, supplierApp, savedProductProfile);
-                                           return attributeWrapper;
+                                            AttributeWrapper attribute = getAttribute(attributeWrapper, supplierApp, savedProductProfile);
+                                            return attributeWrapper;
                                         }
                                         return null;
                                     })
@@ -432,7 +494,7 @@ public class ParserServiceOscar extends ParserServiceAbstract {
 
                             String format = url.substring(url.lastIndexOf("."));
                             String imageName = p.getModel().concat("_main").concat(format);
-                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imageName);
+                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
                             downloadImage(url, dbImgPath);
 
                             p.setImage(dbImgPath);
@@ -627,7 +689,6 @@ public class ParserServiceOscar extends ParserServiceAbstract {
         attributeRows.forEach(r -> log.info("row: {}", r));
         return attributeRows;
     }
-
 
 
     public String cleanAttribute(Element descriptionElement) {

@@ -181,5 +181,62 @@ public class AdminController {
         return "redirect:/admin/block";
     }
 
+    @GetMapping("/testfrizel")
+    public String testFrizel() {
+        log.info("Starts frizel");
+        managerService.testFrizel();
+        log.info("End frizel");
+        return "redirect:/admin/block";
+    }
+
+    @GetMapping("/hatorchangeimg")
+    public String hatorChangeImage() {
+        log.info("Starts frizel");
+        managerService.hatorChangeImage();
+        log.info("End frizel");
+        return "redirect:/admin/block";
+    }
+
+    @GetMapping("/oscarupdateimg")
+    public String oscarImageUpdate() {
+        log.info("Starts frizel");
+        managerService.oscarImageUpdate();
+        log.info("End frizel");
+        return "redirect:/admin/block";
+    }
+
+    @GetMapping("/deletecustomdata")
+    public String deleteCustomData() {
+        log.info("Starts frizel");
+        managerService.deleteCustomProducts();
+        log.info("End frizel");
+        return "redirect:/admin/block";
+    }
+
+
+
+    @GetMapping("/translateFrizel")
+    public String translateFrizel() {
+        log.info("Starts frizel");
+        managerService.translateFrizel();
+        log.info("End frizel");
+        return "redirect:/admin/block";
+    }
+
+    @GetMapping("/buildWebDriver")
+    public String buildWebDriver() {
+        log.info("Starts frizel");
+        managerService.testbuildWebDriver();
+        log.info("End frizel");
+        return "redirect:/admin/block";
+    }
+
+    @GetMapping("/moveimg")
+    public String moveImages() {
+        log.info("Starts move img");
+        managerService.moveImagesToSupplierDir();
+        log.info("End move img");
+        return "redirect:/admin/block";
+    }
 
 }

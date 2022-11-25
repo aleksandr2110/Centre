@@ -77,6 +77,8 @@ public class ParserServiceSector extends ParserServiceAbstract {
 
             OpencartDto opencartInfo = getOpencartInfo(productInitData, supplierApp);
             checkPrice(opencartInfo, supplierApp);
+
+
             List<ProductOpencart> newProduct = opencartInfo.getNewProduct();
 
             newProduct
@@ -304,7 +306,7 @@ public class ParserServiceSector extends ParserServiceAbstract {
                                                     .stream()
                                                     .map(i -> {
                                                         String imgName = sku.concat("_").concat(String.valueOf(countImage.addAndGet(1))).concat(i.substring(i.lastIndexOf(".")));
-                                                        String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                                        String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
                                                         downloadImage(i, dbImgPath);
 
                                                         if (mainImgUrl.equals(i)) {
@@ -482,7 +484,7 @@ public class ParserServiceSector extends ParserServiceAbstract {
 
                                                 String imgName = sku.concat("_").concat(String.valueOf(i.getPosition())).concat(fullUrl.substring(fullUrl.lastIndexOf(".")));
 
-                                                String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                                String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
                                                 downloadImage(fullUrl, dbImgPath);
 
                                                 if (i.getIsMain()) {

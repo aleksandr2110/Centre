@@ -63,7 +63,9 @@ public class ImageOpencartDao implements Dao<ImageOpencart> {
 
     @Override
     public ImageOpencart update(ImageOpencart imageOpencart) {
-        return null;
+        String sql = "update oc_product_image set image = :image where product_id = :productId and product_image_id = :productImageId";
+        jdbcTemplateOpencart.update(sql, new BeanPropertySqlParameterSource(imageOpencart));
+        return imageOpencart;
     }
 
     @Override

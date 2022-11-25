@@ -65,7 +65,6 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
             OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
             checkPrice(opencartInfo, supplierApp);
 
-
             List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
 
 
@@ -246,10 +245,10 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
                                             log.info("Product title: {}", title);
 
                                             String sku = partUrlProduct.substring(partUrlProduct.lastIndexOf("/") + 1).replaceAll("\\.php", "");
-                                            if (sku.length() > 64){
+                                            if (sku.length() > 64) {
                                                 sku = sku.substring(sku.length() - 64);
                                             }
-                                                log.info("Product sku: {}", sku);
+                                            log.info("Product sku: {}", sku);
 
                                             Elements priceElement = ep.select("div.item-pr div.eco-in span");
                                             String price = "0.0";
@@ -440,7 +439,7 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
 
                                             String format = url.substring(url.lastIndexOf("."));
                                             String imageName = p.getModel().concat("_").concat(String.valueOf(countImage.addAndGet(1))).concat(format);
-                                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imageName);
+                                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
                                             log.info("image url: {}", url);
                                             log.info("image name: {}", imageName);
                                             log.info("dbImg path: {}", dbImgPath);
@@ -473,7 +472,7 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
 
                                     String format = url.substring(url.lastIndexOf("."));
                                     String imageName = p.getModel().concat("_").concat(String.valueOf(1).concat(format));
-                                    String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imageName);
+                                    String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
                                     log.info("image url: {}", url);
                                     log.info("image name: {}", imageName);
                                     log.info("dbImg path: {}", dbImgPath);

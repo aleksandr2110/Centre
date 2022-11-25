@@ -23,4 +23,14 @@ class ManagerServiceTest {
         managerService.processApp();
     }
 
+    @Test
+    void testBuildWebDriver(){
+        managerService.testbuildWebDriver();
+    }
+
+    @Test
+    void moveImagesToSupplierDir(){
+        managerService.moveImagesToSupplierDir();
+    }
+
 }

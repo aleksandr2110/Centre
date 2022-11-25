@@ -41,8 +41,8 @@ import java.util.zip.ZipOutputStream;
 public class FileService {
 
 
-//    public static final String imageDirOC = "C:/xampp/htdocs/ocapp/image/";
-        public static final String imageDirOC = "/home/centurwebstarsco/public_html/image/";
+    public static final String imageDirOC = "C:/xampp/htdocs/ocapp/image/";
+//            public static final String imageDirOC = "/home/centurwebstarsco/public_html/image/";
     public static final String PART_PATH = "catalog/app/";
 
     public void writeToFile(String filename, String format, String text) {
@@ -69,6 +69,14 @@ public class FileService {
 
     public void downloadImg(String url, String imageName) {
         Path path = Paths.get(imageDirOC.concat(imageName));
+        Path dir = path.getParent();
+        if (Files.notExists(dir)) {
+            try {
+                Files.createDirectory(dir);
+            } catch (Exception exd) {
+                log.warn("Bad create dir", exd);
+            }
+        }
         if (Files.notExists(path)) {
             log.info("File does not exist: {}", path);
             try {

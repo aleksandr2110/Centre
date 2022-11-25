@@ -601,7 +601,7 @@ public abstract class ParserServiceAbstract implements ParserService {
                             .filter(d -> d.getLanguageId() == OCConstant.UA_LANGUAGE_ID && d.getName().equals(optionName))
                             .findFirst()
                             .orElse(null);
-                    return Objects.nonNull(searchDescription);
+                    return Objects.nonNull(searchDescription) && o.getType().equals(odb.getType());
                 })
                 .findFirst()
                 .orElse(null);

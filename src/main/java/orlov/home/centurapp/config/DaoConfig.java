@@ -29,7 +29,8 @@ public class DaoConfig {
     public DataSource dataSourceApp() {
         HikariDataSource ds = new HikariDataSource();
         ds.setMaximumPoolSize(20);
-        ds.setConnectionTimeout(100000);
+        ds.setConnectionTimeout(600000);
+        ds.setMaxLifetime(580000);
         ds.setDriverClassName(driver);
         ds.setJdbcUrl(urlApp);
         ds.setUsername(username);
@@ -51,11 +52,13 @@ public class DaoConfig {
     public DataSource dataSourceOpencart() {
         HikariDataSource ds = new HikariDataSource();
         ds.setMaximumPoolSize(20);
-        ds.setConnectionTimeout(100000);
+        ds.setConnectionTimeout(600000);
+        ds.setMaxLifetime(580000);
         ds.setDriverClassName(driver);
         ds.setJdbcUrl(urlOc);
         ds.setUsername(username);
         ds.setPassword(password);
+
         return ds;
     }
 

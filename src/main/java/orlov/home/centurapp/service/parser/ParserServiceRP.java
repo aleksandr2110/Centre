@@ -53,12 +53,12 @@ public class ParserServiceRP extends ParserServiceAbstract {
     private final TranslateService translateService;
     private final FileService fileService;
 
-    public ParserServiceRP(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, FileService fileService1) {
+    public ParserServiceRP(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService) {
         super(appDaoService, opencartDaoService, scraperDataUpdateService, translateService, fileService);
         this.appDaoService = appDaoService;
         this.opencartDaoService = opencartDaoService;
         this.translateService = translateService;
-        this.fileService = fileService1;
+        this.fileService = fileService;
     }
 
 
@@ -78,12 +78,21 @@ public class ParserServiceRP extends ParserServiceAbstract {
 
             log.info("Supplier products count: {}", productsFromSite.size());
 
-
             List<ProductOpencart> fullProductsData = getFullProductsData(productsFromSite, supplierApp);
 
 
             OpencartDto opencartInfo = getOpencartInfo(fullProductsData, supplierApp);
+
+
             checkPrice(opencartInfo, supplierApp);
+
+            opencartInfo.getNewProduct()
+                    .forEach(np -> {
+                        ProductDescriptionOpencart descriptionOpencart = np.getProductsDescriptionOpencart().get(0);
+                        String description = descriptionOpencart.getDescription();
+                        String translatedDescription = translateDescription(description);
+                        descriptionOpencart.setDescription(translatedDescription);
+                    });
 
             opencartInfo.getNewProduct()
                     .forEach(opencartDaoService::saveProductOpencart);
@@ -410,6 +419,8 @@ public class ParserServiceRP extends ParserServiceAbstract {
         return supplierProducts;
     }
 
+
+    //  TODO
     public void updateMainImage() {
         List<ProductOpencart> allProductOpencartBySupplierAppName = opencartDaoService.getAllProductOpencartBySupplierAppName(SUPPLIER_NAME);
         log.info("allProductOpencartBySupplierAppName: {}", allProductOpencartBySupplierAppName.size());
@@ -454,7 +465,7 @@ public class ParserServiceRP extends ParserServiceAbstract {
                                 String srcImage = Objects.isNull(mainImageElement) ? "" : mainImageElement.attr("src").replaceAll("_s\\.", "\\.");
                                 String fullUrlMainImage = SUPPLIER_URL.concat(srcImage.substring(1));
                                 String mainImageName = srcImage.substring(srcImage.lastIndexOf("/") + 1);
-                                String dbMainImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(mainImageName);
+                                String dbMainImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(mainImageName);
                                 downloadImage(fullUrlMainImage, dbMainImgPath);
 
 
@@ -473,7 +484,7 @@ public class ParserServiceRP extends ParserServiceAbstract {
                                                 String imgName = src.substring(src.lastIndexOf("/") + 1);
                                                 log.info("Sub full url : {}", fullUrl);
                                                 log.info("Sub image name: {}", imgName);
-                                                String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                                String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
                                                 log.info("Sub db img path: {}", dbImgPath);
                                                 downloadImage(fullUrl, dbImgPath);
 
@@ -485,6 +496,7 @@ public class ParserServiceRP extends ParserServiceAbstract {
 
                                             })
                                             .collect(Collectors.toList());
+
                                 }
                             }
 
@@ -503,7 +515,7 @@ public class ParserServiceRP extends ParserServiceAbstract {
 
     }
 
-    //    TODO test attribute value update
+
     public void updateAttributeValue() {
         SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
         List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
@@ -583,10 +595,10 @@ public class ParserServiceRP extends ParserServiceAbstract {
                                 String mainImageName = srcImage.substring(srcImage.lastIndexOf("/") + 1);
 //                                log.info("Main full url : {}", fullUrlMainImage);
 //                                log.info("Main image name: {}", mainImageName);
-                                String dbMainImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(mainImageName);
+                                String dbMainImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(mainImageName);
 //                                log.info("Main db img path: {}", dbMainImgPath);
                                 downloadImage(fullUrlMainImage, dbMainImgPath);
-                                p.setImage(mainImageName);
+                                p.setImage(dbMainImgPath);
 
                                 Elements tables = infoElement.select("table");
                                 Element tableElement = tables.isEmpty() ? null : tables.get(0);
@@ -625,7 +637,7 @@ public class ParserServiceRP extends ParserServiceAbstract {
                                                 String imgName = src.substring(src.lastIndexOf("/") + 1);
                                                 log.info("Sub full url : {}", fullUrl);
                                                 log.info("Sub image name: {}", imgName);
-                                                String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                                String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
                                                 log.info("Sub db img path: {}", dbImgPath);
                                                 downloadImage(fullUrl, dbImgPath);
 
@@ -674,6 +686,12 @@ public class ParserServiceRP extends ParserServiceAbstract {
         return fullProducts;
     }
 
+    public String translateDescription(String description) {
+        String desc = cleanDescription(Jsoup.parse(description));
+        desc = translateService.getTranslatedText(desc);
+        return wrapToHtml(desc);
+    }
+
 
     public String getDescription(Document doc) {
         Elements descElements = doc.select("section.article-content.clearfix > p:lt(1)");
@@ -687,7 +705,6 @@ public class ParserServiceRP extends ParserServiceAbstract {
                 String desc = cleanDescription(Jsoup.parse(description));
                 String therDesc = cleanDescription(otherDescElement);
                 desc = desc.concat("\n\n").concat(therDesc);
-                desc = translateService.getTranslatedText(desc);
                 description = wrapToHtml(desc);
             }
         }

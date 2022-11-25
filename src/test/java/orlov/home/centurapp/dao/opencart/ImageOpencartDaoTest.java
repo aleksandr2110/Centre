@@ -39,6 +39,11 @@ class ImageOpencartDaoTest {
 
     @Test
     void update() {
+        ImageOpencart imageOpencart = new ImageOpencart();
+        imageOpencart.setImage("123123");
+        imageOpencart.setProductId(188377267);
+        imageOpencart.setProductImageId(375749);
+        imageOpencartDao.update(imageOpencart);
     }
 
     @Test

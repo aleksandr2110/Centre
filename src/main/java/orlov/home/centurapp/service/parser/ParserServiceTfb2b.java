@@ -317,7 +317,7 @@ public class ParserServiceTfb2b extends ParserServiceAbstract {
                                                     String style = mainImageElement.getAttribute("style");
                                                     urlImage = SUPPLIER_PART_IMAGE_URL.concat(style.substring(style.indexOf("url(\"") + 5, style.indexOf("\");")));
                                                     String imageName = urlImage.substring(urlImage.lastIndexOf("/") + 1);
-                                                    imageDB = AppConstant.PART_DIR_OC_IMAGE.concat(imageName);
+                                                    imageDB = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
                                                     downloadImage(urlImage, imageDB);
                                                     log.info("Image url: {}", urlImage);
                                                 }
@@ -589,7 +589,7 @@ public class ParserServiceTfb2b extends ParserServiceAbstract {
                                         log.info("urlImage: {}", urlImage);
 
                                         String imageName = urlImage.substring(urlImage.lastIndexOf("/") + 1);
-                                        String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imageName);
+                                        String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
                                         log.info("imageName: {}", imageName);
                                         log.info("dbImgPath: {}", dbImgPath);
                                         downloadImage(urlImage, dbImgPath);

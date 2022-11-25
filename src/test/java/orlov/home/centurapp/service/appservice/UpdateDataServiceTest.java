@@ -32,6 +32,10 @@ class UpdateDataServiceTest {
     }
 
 
+    @Test
+    void deleteUsersProduct() {
+        updateDataService.deleteUsersProduct();
+    }
 
 
     @Test

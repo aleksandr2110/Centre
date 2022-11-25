@@ -13,21 +13,23 @@ import orlov.home.centurapp.mapper.opencart.ImageOpencartRowMapper;
 import java.util.List;
 
 @Service
-@Slf4j@AllArgsConstructor
-@Getter@Setter
+@Slf4j
+@AllArgsConstructor
+@Getter
+@Setter
 public class ImageOpencartService {
 
     private final ImageOpencartDao imageOpencartDao;
 
-    public void deleteById(int id){
+    public void deleteById(int id) {
         imageOpencartDao.deleteById(id);
     }
 
-    public void deleteByName(String imageName){
+    public void deleteByName(String imageName) {
         imageOpencartDao.deleteByName(imageName);
     }
 
-    public void deleteByProductId(int productId){
+    public void deleteByProductId(int productId) {
         imageOpencartDao.deleteByProductId(productId);
     }
 
@@ -39,8 +41,12 @@ public class ImageOpencartService {
         return imageOpencartDao.getImageByProductId(productId);
     }
 
-    public ImageOpencart getByImage(String image){
-      return imageOpencartDao.getByImage(image);
+    public void updateSubImage(ImageOpencart imageOpencart) {
+        imageOpencartDao.update(imageOpencart);
+    }
+
+    public ImageOpencart getByImage(String image) {
+        return imageOpencartDao.getByImage(image);
     }
 
 }

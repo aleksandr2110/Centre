@@ -38,6 +38,10 @@ public class OpencartDaoService {
         return productOpencartService.getAllModelByAttributeId(attrId);
     }
 
+    public void updateSubImage(ImageOpencart imageOpencart){
+        imageOpencartService.updateSubImage(imageOpencart);
+    }
+
     public void deleteProductOption(int productId, int optionId) {
         productOpencartService.deleteProductOption(productId, optionId);
     }

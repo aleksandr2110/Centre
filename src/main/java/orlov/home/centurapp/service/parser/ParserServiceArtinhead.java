@@ -390,7 +390,7 @@ public class ParserServiceArtinhead extends ParserServiceAbstract {
                                         v.setImgUrl(url);
                                         String imgName = "option_".concat(url.substring(url.lastIndexOf("/") + 1));
                                         log.info("Image option name: {}", imgName);
-                                        String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                        String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
                                         log.info("dbImgPath option : {}", dbImgPath);
                                         downloadImage(url, dbImgPath);
                                         v.setDbpathImage(dbImgPath);
@@ -743,7 +743,7 @@ public class ParserServiceArtinhead extends ParserServiceAbstract {
 
                                             String imgName = p.getSku().concat("_").concat(String.valueOf(imageCount)).concat(fullUrl.substring(fullUrl.lastIndexOf(".")));
 
-                                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
                                             downloadImage(fullUrl, dbImgPath);
                                             log.info("Image name: {}, image dbPath: {}", imgName, dbImgPath);
                                             if (countImg.get() == 1) {
