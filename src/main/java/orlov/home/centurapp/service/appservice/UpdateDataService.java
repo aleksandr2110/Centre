@@ -44,6 +44,7 @@ public class UpdateDataService {
     private final OrderProcessAppService orderProcessAppService;
     private final ProductAppService productAppService;
     private final String dirImage = FileService.imageDirOC;
+    private final OpencartDaoService opencartDaoService;
 
     public Path getZipFileImage(int supplierId) {
         SupplierApp supplier = supplierAppService.getById(supplierId);
@@ -434,6 +435,33 @@ public class UpdateDataService {
                 });
 
         return product;
+    }
+
+
+    public void deleteUsersProduct() {
+
+        List<SupplierApp> suppliersApp = appDaoService.getAllSupplierApp();
+
+
+        suppliersApp
+                .stream()
+                .forEach(s -> {
+            log.info("Delete products of supplier app [name: {}], [sup_code: {}]", s.getName(), s.getDisplayName());
+            List<ProductSupplierOpencart> productsSupplier = opencartDaoService.getAllProductSupplierOpencartBySupCode(s.getDisplayName());
+
+
+
+            productsSupplier.forEach(pso -> {
+                int productId = pso.getProductId();
+                String supCode = pso.getSupCode();
+                ProductOpencart productOpencartById = opencartDaoService.getProductOpencartById(productId);
+                boolean isApp = Objects.nonNull(productOpencartById) && !productOpencartById.getJan().equals(s.getName());
+                if (isApp)
+                    opencartDaoService.deleteProductOpencartData(productId);
+            });
+
+        });
+
     }
 
     public void deleteAllProductData() {

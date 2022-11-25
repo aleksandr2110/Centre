@@ -66,6 +66,7 @@ public class ParserServiceCanadapech extends ParserServiceAbstract {
 
             OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
             checkPrice(opencartInfo, supplierApp);
+
             List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
 
 
@@ -212,7 +213,7 @@ public class ParserServiceCanadapech extends ParserServiceAbstract {
 
                                                 if (!urlImage.isEmpty()) {
                                                     String imgName = sku.concat("_").concat(String.valueOf(0)).concat(".jpg");
-                                                    dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                                    dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
 
                                                     log.info("imgName: {}", imgName);
                                                     log.info("dbImgPath: {}", dbImgPath);
@@ -421,7 +422,7 @@ public class ParserServiceCanadapech extends ParserServiceAbstract {
                                                 String sku = p.getSku();
 
                                                 String imgName = sku.concat("_").concat(String.valueOf(countImage.addAndGet(1))).concat(".jpg");
-                                                String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                                String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
 
                                                 log.info("urlImage: {}", urlImage);
                                                 log.info("imgName: {}", imgName);

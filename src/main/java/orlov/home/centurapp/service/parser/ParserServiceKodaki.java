@@ -58,7 +58,8 @@ public class ParserServiceKodaki extends ParserServiceAbstract {
 
             OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
             checkPrice(opencartInfo, supplierApp);
-            List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
+
+             List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
 
             fullProductsData
                     .forEach(opencartDaoService::saveProductOpencart);
@@ -444,7 +445,7 @@ public class ParserServiceKodaki extends ParserServiceAbstract {
 
                                             String format = url.substring(url.lastIndexOf("."));
                                             String imageName = p.getSku().concat("_").concat(String.valueOf(countImage.addAndGet(1))).concat(format);
-                                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imageName);
+                                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
                                             log.info("image url: {}", url);
                                             log.info("image name: {}", imageName);
                                             log.info("dbImg path: {}", dbImgPath);

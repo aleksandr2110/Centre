@@ -75,7 +75,6 @@ public class ParserServiceAstim extends ParserServiceAbstract {
 
             supplierApp.setSiteCategories(siteCategories);
 
-
             List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
 
             checkPrice(opencartInfo, supplierApp);
@@ -651,7 +650,7 @@ public class ParserServiceAstim extends ParserServiceAbstract {
 
                             String urlImage = p.getUrlImage();
                             String imgName = urlImage.substring(urlImage.lastIndexOf("/") + 1);
-                            String imgNameDb = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                            String imgNameDb = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
                             p.setImage(imgNameDb);
                             downloadImage(urlImage, imgNameDb);
 
@@ -662,7 +661,7 @@ public class ParserServiceAstim extends ParserServiceAbstract {
                                     .map(ui -> {
 
                                         String subImgName = ui.substring(urlImage.lastIndexOf("/") + 1);
-                                        String subImgNameDb = AppConstant.PART_DIR_OC_IMAGE.concat(subImgName);
+                                        String subImgNameDb = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(subImgName);
                                         downloadImage(ui, subImgNameDb);
                                         return new ImageOpencart.Builder()
                                                 .withImage(subImgNameDb)
@@ -711,7 +710,7 @@ public class ParserServiceAstim extends ParserServiceAbstract {
                             productProfileApp.setCategoryId(categoryApp.getCategoryId());
                             productProfileApp.setTitle(name);
                             ProductProfileApp savedProductProfile = getProductProfile(productProfileApp, supplierApp);
-                            log.info("{}. productProfileFull: {}", countProduct.addAndGet(1),savedProductProfile);
+                            log.info("{}. productProfileFull: {}", countProduct.addAndGet(1), savedProductProfile);
                             p.setProductProfileApp(savedProductProfile);
                             setPriceWithMarkup(p);
 

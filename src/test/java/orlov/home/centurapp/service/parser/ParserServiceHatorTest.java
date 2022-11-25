@@ -48,6 +48,11 @@ class ParserServiceHatorTest {
     }
 
     @Test
+    void changeFirstSecondImage(){
+        parserServiceHator.changeFirstSecondImage();
+    }
+
+    @Test
     void updateImages(){
         parserServiceHator.updateImages();
     }

@@ -133,6 +133,7 @@ public class ParserServiceGoodfood extends ParserServiceAbstract {
             checkPrice(opencartInfo, supplierApp);
             List<ProductOpencart> newProduct = opencartInfo.getNewProduct();
 
+
             List<ProductOpencart> fullProductsData = getFullProductsData(newProduct, supplierApp);
 
             fullProductsData
@@ -324,7 +325,7 @@ public class ParserServiceGoodfood extends ParserServiceAbstract {
                             .map(row -> {
                                 String th = row.getName();
                                 String td = row.getText();
-                                if (Objects.isNull(th) || Objects.isNull(td) || th.isEmpty() || td.isEmpty()){
+                                if (Objects.isNull(th) || Objects.isNull(td) || th.isEmpty() || td.isEmpty()) {
                                     return null;
                                 }
                                 AttributeWrapper attributeWrapper = new AttributeWrapper(th, td, null);
@@ -344,7 +345,7 @@ public class ParserServiceGoodfood extends ParserServiceAbstract {
 
                                 if (idx != -1) {
                                     String imgName = picture.substring(idx + 1);
-                                    String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imgName);
+                                    String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imgName);
 
                                     downloadImage(picture, dbImgPath);
 
