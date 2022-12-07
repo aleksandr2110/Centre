@@ -84,13 +84,12 @@ public class ParserServiceAnshar extends ParserServiceAbstract {
 
 
             OpencartDto opencartInfo = getOpencartInfo(fullProductsData, supplierApp);
-
             checkPrice(opencartInfo, supplierApp);
             checkProductOption(opencartInfo);
-
             checkStockStatusId(opencartInfo, supplierApp);
-
             List<ProductOpencart> newProduct = opencartInfo.getNewProduct();
+
+
 
             newProduct.forEach(opencartDaoService::saveProductOpencart);
             updateDataService.updatePrice(supplierApp.getSupplierAppId());

@@ -25,6 +25,7 @@ public class OrderController {
 
     private final AppDaoService appDaoService;
 
+
     @GetMapping
     public String parserOrder(Model model) {
         List<OrderProcessApp> orders = appDaoService.getAllOrderProcessAppLimited(0, 100);
