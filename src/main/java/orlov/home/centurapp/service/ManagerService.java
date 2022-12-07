@@ -180,7 +180,6 @@ public class ManagerService {
                     parserServiceUhlmash.doProcess();
                     parserServiceTechsnab.doProcess();
                     parserServiceNoveen.doProcess();
-
                     parserServiceGoodfood.doProcess();
                     parserServiceArtinhead.doProcess();
                     parserServiceAstim.doProcess();

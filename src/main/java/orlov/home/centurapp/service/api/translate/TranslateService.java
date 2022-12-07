@@ -50,6 +50,7 @@ public class TranslateService {
         return text;
     }
 
+
     public void webTranslate(List<ProductOpencart> productToTranslateList) {
         AtomicInteger count = new AtomicInteger();
         WebDriver driver = buildWebDriver();

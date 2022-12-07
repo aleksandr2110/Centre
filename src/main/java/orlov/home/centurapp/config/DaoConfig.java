@@ -25,6 +25,7 @@ public class DaoConfig {
     @Value("${db.password}")
     private String password;
 
+
     @Bean
     public DataSource dataSourceApp() {
         HikariDataSource ds = new HikariDataSource();

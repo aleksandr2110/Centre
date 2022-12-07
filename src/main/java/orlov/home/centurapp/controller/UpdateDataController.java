@@ -123,7 +123,6 @@ public class UpdateDataController {
 
         log.info("Supplier: {}", supplier);
 
-
         if (file.getSize() == 0) {
             redirectAttributes.addFlashAttribute("uploadEmptyI", "Порожній файл");
         } else if (fileFormat.equals("zip")) {
