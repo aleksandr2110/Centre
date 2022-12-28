@@ -810,7 +810,8 @@ public class ParserServiceHator extends ParserServiceAbstract {
                         driver.get(urlProduct);
                         WebDriverWait webDriverWait = new WebDriverWait(driver, 10, 500);
                         WebElement ukLanguageElement = webDriverWait
-                                .until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@title='Ukrainian']")));
+                                .until(ExpectedConditions.elementToBeClickable(
+                                        By.xpath("/html/body/nav[2]/div/div/div[1]/form/div/div/button[1]")));
 
                         new Actions(driver)
                                 .moveToElement(ukLanguageElement)
