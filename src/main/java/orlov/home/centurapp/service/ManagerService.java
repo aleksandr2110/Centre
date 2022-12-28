@@ -38,7 +38,6 @@ import static java.nio.file.StandardCopyOption.*;
 @Service
 @Slf4j
 @AllArgsConstructor
-
 public class ManagerService {
 
     private final ParserServiceMaresto parserServiceMaresto;
@@ -61,6 +60,7 @@ public class ManagerService {
     private final ParserServiceOscar parserServiceOscar;
     private final ParserServiceAnshar parserServiceAnshar;
     private final ParserServiceFrizel parserServiceFrizel;
+    private final ParserServiceSiker parserServiceSiker;
     private final OpencartDaoService opencartDaoService;
     private final AppDaoService appDaoService;
     private final UpdateDataService updateDataService;
@@ -189,6 +189,7 @@ public class ManagerService {
                     parserServiceIndigowood.doProcess();
                     parserServiceSector.doProcess();
                     parserServiceTfb2b.doProcess();
+                    parserServiceSiker.doProcess();
                     log.info("End global process");
                     TimeUnit.HOURS.sleep(10);
                 } catch (Exception e) {
