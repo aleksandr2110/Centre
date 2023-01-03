@@ -706,7 +706,7 @@ public class ParserServiceHator extends ParserServiceAbstract {
                                                 log.info("Product url: {}", urlProduct);
                                                 String title = ep.select("div.fm-category-product-caption > div.fm-module-title > a").text();
                                                 log.info("Product title: {}", title);
-                                                String sku = ep.select("div.fm-category-product-model").text().replaceAll("Код товара:", "").trim();
+                                                String sku = ep.select("div.fm-category-product-model").text().replaceAll("Код товару:", "").trim();
                                                 log.info("Product sku: {}", sku);
                                                 String model = generateModel(sku, "0000");
                                                 log.info("Product model: {}", model);
@@ -783,14 +783,16 @@ public class ParserServiceHator extends ParserServiceAbstract {
     public List<ProductOpencart> getFullProductsData(List<ProductOpencart> products, SupplierApp supplierApp) {
 
         WebDriverManager.chromedriver().setup();
-        WebDriverManager.chromedriver().setup();
         ChromeOptions options = new ChromeOptions();
         options.setHeadless(true);
-        options.addArguments("--disable-extensions");
-        options.addArguments("--disable-gpu");
+        options.addArguments("enable-automation");
+        options.addArguments("--headless");
+        options.addArguments("--window-size=1920,1080");
         options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--window-size=1920x1080");
+        options.addArguments("--disable-extensions");
+        options.addArguments("--dns-prefetch-disable");
+        options.addArguments("--disable-gpu");
+        options.setPageLoadStrategy(PageLoadStrategy.NORMAL);
 
         WebDriver driver = new ChromeDriver(options);
 
