@@ -26,11 +26,11 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class ParserServiceSiker extends ParserServiceAbstract {
+public class ParserServiceGrillex extends ParserServiceAbstract {
 
-    private final String SUPPLIER_NAME = "siker";
-    private final String SUPPLIER_URL = "https://siker.com.ua/";
-    private final String DISPLAY_NAME = "132 - Siker";
+    private final String SUPPLIER_NAME = "grillex";
+    private final String SUPPLIER_URL = "https://grillex.com.ua/";
+    private final String DISPLAY_NAME = "98 - Grillex";
 
     private final AppDaoService appDaoService;
     private final OpencartDaoService opencartDaoService;
@@ -39,7 +39,7 @@ public class ParserServiceSiker extends ParserServiceAbstract {
     private final UpdateDataService updateDataService;
     private final ImageService imageService;
 
-    public ParserServiceSiker(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, AppDaoService appDaoService1, OpencartDaoService opencartDaoService1, TranslateService translateService1, FileService fileService1, UpdateDataService updateDataService, ImageService imageService) {
+    public ParserServiceGrillex(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, AppDaoService appDaoService1, OpencartDaoService opencartDaoService1, TranslateService translateService1, FileService fileService1, UpdateDataService updateDataService, ImageService imageService) {
         super(appDaoService, opencartDaoService, scraperDataUpdateService, translateService, fileService);
         this.appDaoService = appDaoService1;
         this.opencartDaoService = opencartDaoService1;
@@ -53,7 +53,6 @@ public class ParserServiceSiker extends ParserServiceAbstract {
     public void doProcess() {
         try {
 
-            OrderProcessApp orderProcessApp = new OrderProcessApp();
             Timestamp start = new Timestamp(Calendar.getInstance().getTime().getTime());
 
             SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
@@ -80,7 +79,7 @@ public class ParserServiceSiker extends ParserServiceAbstract {
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
             Timestamp end = new Timestamp(Calendar.getInstance().getTime().getTime());
-            orderProcessApp = opencartInfo.getOrderProcessApp();
+            OrderProcessApp orderProcessApp = opencartInfo.getOrderProcessApp();
             orderProcessApp.setStartProcess(start);
             orderProcessApp.setEndProcess(end);
             appDaoService.saveOrderDataApp(orderProcessApp);
@@ -98,12 +97,12 @@ public class ParserServiceSiker extends ParserServiceAbstract {
 
         AtomicInteger countMainCategory = new AtomicInteger();
         if (Objects.nonNull(doc)) {
-            List<CategoryOpencart> mainCategories = doc.select("ul#menu-list > li")
+            List<CategoryOpencart> mainCategories = doc.select(".main-categories-list > li >div > div > a")
                     .stream()
                     .map(ec -> {
 
-                        String url = ec.select("a").first().attr("href");
-                        String title = ec.select("a").first().text().trim();
+                        String url = ec.attr("href");
+                        String title = ec.select("img").attr("alt");
                         log.info("{}. Main site category title: {}, url: {}", countMainCategory.addAndGet(1), title, url);
                         CategoryOpencart categoryOpencart = new CategoryOpencart.Builder()
                                 .withUrl(url)
@@ -125,27 +124,12 @@ public class ParserServiceSiker extends ParserServiceAbstract {
 
             log.info("Main category size: {}", mainCategories.size());
 
-            List<CategoryOpencart> siteCategoryStructure = mainCategories
-                    .stream()
-                    .map(mc -> {
-                        log.info("MAIN CATEGORY: {}", mc.getDescriptions().get(0).getName());
-                        return recursiveWalkSiteCategory(mc);
-                    })
-                    .collect(Collectors.toList());
 
-            List<CategoryOpencart> siteCategoryList = siteCategoryStructure
+            return mainCategories
                     .stream()
                     .map(sc -> recursiveCollectListCategory(sc, supplierCategoryOpencartDB))
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList());
-            siteCategoryList.add(supplierApp.getMainSupplierCategory());
-            siteCategoryList.add(supplierApp.getGlobalSupplierCategory());
-
-            siteCategoryList
-                    .forEach(c -> log.info("Full Site category: {}, subCategorySize: {}", c.getDescriptions().get(0).getName(), c.getCategoriesOpencart().size()));
-
-            return siteCategoryList;
-
         }
         return new ArrayList<>();
     }
@@ -153,39 +137,7 @@ public class ParserServiceSiker extends ParserServiceAbstract {
     @Override
     public CategoryOpencart recursiveWalkSiteCategory(CategoryOpencart category) {
 
-        String url = category.getUrl();
-        Document doc = getWebDocument(url, new HashMap<>());
-        if (Objects.nonNull(doc)) {
-
-            List<CategoryOpencart> subCategories = doc.select(".subcategory > a")
-                    .stream()
-                    .map(el -> {
-                        String subUrl = el.attr("href");
-                        String subTitle = el.text();
-                        log.info("    Sub category: {}", subTitle);
-                        CategoryOpencart subCategory = new CategoryOpencart.Builder()
-                                .withUrl(subUrl)
-                                .withTop(false)
-                                .withParentCategory(category)
-                                .withStatus(false)
-                                .build();
-                        CategoryDescriptionOpencart description = new CategoryDescriptionOpencart.Builder()
-                                .withName(subTitle)
-                                .withDescription(category.getDescriptions().get(0).getDescription())
-                                .withLanguageId(OCConstant.UA_LANGUAGE_ID)
-                                .build();
-                        subCategory.getDescriptions().add(description);
-
-                        recursiveWalkSiteCategory(subCategory);
-
-                        return subCategory;
-
-                    })
-                    .collect(Collectors.toList());
-            category.getCategoriesOpencart().addAll(subCategories);
-
-        }
-        return category;
+        return null;
     }
 
     @Override
@@ -194,19 +146,11 @@ public class ParserServiceSiker extends ParserServiceAbstract {
         List<ProductOpencart> allProductInitList = new ArrayList<>();
 
         categoriesWithProduct
-                .stream()
-                .filter(c -> {
-                    int categoryId = c.getCategoryId();
-                    List<CategoryOpencart> childrenCategory = categoriesWithProduct.stream().filter(sub -> sub.getParentId() == categoryId).collect(Collectors.toList());
-                    return childrenCategory.isEmpty();
-                })
                 .forEach(c -> {
 
                     String categoryName = c.getDescriptions().get(0).getName();
                     CategoryApp categoryApp = getCategoryApp(categoryName, supplierApp);
                     String url = c.getUrl();
-
-                    List<CategoryOpencart> parentsCategories = getParentsCategories(c, categoriesWithProduct);
 
                     Elements nextPage;
                     do {
@@ -214,83 +158,144 @@ public class ParserServiceSiker extends ParserServiceAbstract {
                         try {
                             if (Objects.nonNull(doc)) {
 
-                                Elements elementsProduct = doc.select(".product-thumb.thumbnail");
-                                log.info("Count product: {} on page: {}", elementsProduct.size(), url);
-                                elementsProduct
-                                        .stream()
-                                        .map(ep -> {
-                                            log.info("");
-                                            String urlProduct = ep.select(".caption h4 a").attr("href");
-                                            log.info("Product url: {}", urlProduct);
-                                            String title = ep.select(".img-responsive.center-block").attr("title");
-                                            log.info("Product title: {}", title);
-                                            String sku = getSKUOnProductPage(urlProduct);
-                                            log.info("Product sku: {}", sku);
-                                            String model = generateModel(sku, "0000");
-                                            log.info("Product model: {}", model);
-                                            String textPrice = ep.select(".price").text().replace("грн", "").trim();
-                                            BigDecimal price = new BigDecimal("0");
-                                            if (!textPrice.isEmpty()) {
-                                                price = new BigDecimal(textPrice);
-                                            }
-                                            log.info("Product price: {}", price);
-                                            String urlImage = ep.select(".image img").attr("src");
-                                            log.info("Product url image: {}", urlImage);
-                                            String imageName = urlImage.substring(urlImage.lastIndexOf("/") + 1, urlImage.indexOf("?"));
+                                Elements elementsProduct = doc.select(".cat-item-wrapper");
 
-                                            imageName = sku.concat("-").concat(imageName);
-                                            log.info("Product image name: {}", imageName);
-                                            String imageDBName = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
-                                            log.info("Product image db name: {}", imageDBName);
-                                            downloadImage(urlImage, imageDBName);
-
-                                            ProductProfileApp productProfileApp = new ProductProfileApp.Builder()
-                                                    .withTitle(title)
-                                                    .withUrl(urlProduct)
-                                                    .withSku(sku)
-                                                    .withPrice(price)
-                                                    .withSupplierId(supplierApp.getSupplierAppId())
-                                                    .withSupplierApp(supplierApp)
-                                                    .withCategoryId(categoryApp.getCategoryId())
-                                                    .withCategoryApp(categoryApp)
-                                                    .build();
-
-                                            ProductOpencart product = new ProductOpencart.Builder()
-                                                    .withTitle(title)
-                                                    .withUrlProduct(urlProduct)
-                                                    .withModel(model)
-                                                    .withSku(sku)
-                                                    .withImage(imageDBName)
-                                                    .withPrice(price)
-                                                    .withItuaOriginalPrice(price)
-                                                    .withJan(supplierApp.getName())
-                                                    .withProductProfileApp(productProfileApp)
-                                                    .build();
-                                            product.setCategoriesOpencart(parentsCategories);
-
-                                            if (!allProductInitList.contains(product)) {
-                                                allProductInitList.add(product);
-                                            }
-
-                                            return product;
-                                        })
-                                        .collect(Collectors.toList());
-
+                                if (elementsProduct.isEmpty()) {
+                                    elementsProduct = doc.select(".item-wrapper");
+                                    getProductsInitDataByCategoryFirst(allProductInitList, supplierApp, categoryApp,
+                                            elementsProduct, c);
+                                } else {
+                                    getProductsInitDataByCategorySecond(allProductInitList, supplierApp, categoryApp,
+                                            elementsProduct, c);
+                                }
                             }
                         } catch (Exception e) {
                             log.warn("Problem iterate page", e);
                         }
-                        nextPage = doc.select(".pagination > li:nth-child(3) > a");
+                        nextPage = doc.select(".nextpostslink");
                         url = nextPage.attr("href");
-                    } while (nextPage.text().equals(">"));
+                    } while (nextPage.size() != 0);
                 });
 
         return allProductInitList;
     }
 
-    private String getSKUOnProductPage(String url) {
-        return getWebDocument(url, new HashMap<>())
-                .select(".inline-info > span:nth-child(2)").text();
+    private void getProductsInitDataByCategoryFirst(List<ProductOpencart> allProductInitList, SupplierApp supplierApp,
+                                                    CategoryApp categoryApp, Elements elementsProduct, CategoryOpencart c) {
+        elementsProduct
+                .forEach(ep -> {
+                    String urlProduct = ep.select(".item-img > a").attr("href");
+                    log.info("Product url: {}", urlProduct);
+                    String title = ep.select(".item-img > a").attr("title");
+                    log.info("Product title: {}", title);
+                    String sku = ep.select(".cat-item-code").text().replace("код","").trim();
+                    log.info("Product sku: {}", sku);
+                    String model = generateModel(sku, "0000");
+                    log.info("Product model: {}", model);
+                    String textPrice = ep.select(".price").text().replace("грн.","")
+                            .replaceAll(" ","");
+                    BigDecimal price = new BigDecimal("0");
+                    if (!textPrice.isEmpty()) {
+                        price = new BigDecimal(textPrice);
+                    }
+                    log.info("Product price: {}", price);
+                    String urlImage = ep.select(".item-img img").attr("src");
+                    log.info("Product url image: {}", urlImage);
+                    String imageName = urlImage.substring(urlImage.lastIndexOf("/") + 1);
+
+                    imageName = sku.concat("-").concat(imageName);
+                    log.info("Product image name: {}", imageName);
+                    String imageDBName = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
+                    log.info("Product image db name: {}", imageDBName);
+                    downloadImage(urlImage, imageDBName);
+
+                    ProductProfileApp productProfileApp = new ProductProfileApp.Builder()
+                            .withTitle(title)
+                            .withUrl(urlProduct)
+                            .withSku(sku)
+                            .withPrice(price)
+                            .withSupplierId(supplierApp.getSupplierAppId())
+                            .withSupplierApp(supplierApp)
+                            .withCategoryId(categoryApp.getCategoryId())
+                            .withCategoryApp(categoryApp)
+                            .build();
+
+                    ProductOpencart product = new ProductOpencart.Builder()
+                            .withTitle(title)
+                            .withUrlProduct(urlProduct)
+                            .withModel(model)
+                            .withSku(sku)
+                            .withImage(imageDBName)
+                            .withPrice(price)
+                            .withItuaOriginalPrice(price)
+                            .withJan(supplierApp.getName())
+                            .withProductProfileApp(productProfileApp)
+                            .build();
+                    product.setCategoriesOpencart(Arrays.asList(c));
+
+                    if (!allProductInitList.contains(product)) {
+                        allProductInitList.add(product);
+                    }
+                });
+    }
+
+    private void getProductsInitDataByCategorySecond(List<ProductOpencart> allProductInitList, SupplierApp supplierApp,
+                                                     CategoryApp categoryApp, Elements elementsProduct, CategoryOpencart c) {
+        elementsProduct
+                .forEach(ep -> {
+                    String urlProduct = ep.select(".cat-item-title > a").attr("href");
+                    log.info("Product url: {}", urlProduct);
+                    String title = ep.select(".cat-item-title > a").text();
+                    log.info("Product title: {}", title);
+                    String sku = ep.select(".cat-item-code > span").text();
+                    log.info("Product sku: {}", sku);
+                    String model = generateModel(sku, "0000");
+                    log.info("Product model: {}", model);
+                    String textPrice = ep.select(".cat-item-price span").get(0).text()
+                            .replace(" ", "");
+                    BigDecimal price = new BigDecimal("0");
+                    if (!textPrice.isEmpty()) {
+                        price = new BigDecimal(textPrice);
+                    }
+                    log.info("Product price: {}", price);
+                    String urlImage = ep.select(".img img").attr("src");
+                    log.info("Product url image: {}", urlImage);
+                    String imageName = urlImage.substring(urlImage.lastIndexOf("/") + 1);
+
+                    imageName = sku.concat("-").concat(imageName);
+                    log.info("Product image name: {}", imageName);
+                    String imageDBName = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
+                    log.info("Product image db name: {}", imageDBName);
+                    downloadImage(urlImage, imageDBName);
+
+                    ProductProfileApp productProfileApp = new ProductProfileApp.Builder()
+                            .withTitle(title)
+                            .withUrl(urlProduct)
+                            .withSku(sku)
+                            .withPrice(price)
+                            .withSupplierId(supplierApp.getSupplierAppId())
+                            .withSupplierApp(supplierApp)
+                            .withCategoryId(categoryApp.getCategoryId())
+                            .withCategoryApp(categoryApp)
+                            .build();
+
+                    ProductOpencart product = new ProductOpencart.Builder()
+                            .withTitle(title)
+                            .withUrlProduct(urlProduct)
+                            .withModel(model)
+                            .withSku(sku)
+                            .withImage(imageDBName)
+                            .withPrice(price)
+                            .withItuaOriginalPrice(price)
+                            .withJan(supplierApp.getName())
+                            .withProductProfileApp(productProfileApp)
+                            .build();
+                    product.setCategoriesOpencart(Arrays.asList(c));
+
+                    if (!allProductInitList.contains(product)) {
+                        allProductInitList.add(product);
+                    }
+                });
     }
 
     @Override
@@ -309,10 +314,15 @@ public class ParserServiceSiker extends ParserServiceAbstract {
                     try {
 
                         String title = prod.getTitle();
-                        Elements elementDescription = doc.select("#tab-description");
+                        Elements elementDescription = doc.select(".description-block div.text");
                         String description = "";
                         if (!elementDescription.isEmpty()) {
-                            description = wrapToHtml(cleanDescription(elementDescription.first()));
+                            doc.select(".all-tech-features-list").text();
+                            description = wrapToHtml(cleanDescription(elementDescription.first()),
+                                    doc.select(".all-tech-features-list > li > ul > li > ul > li"));
+                            description = description.replaceAll("\uD83D\uDE09","");
+                        }else {
+                            System.out.println("");
                         }
 
                         ProductDescriptionOpencart descriptionOpencart = new ProductDescriptionOpencart.Builder()
@@ -323,12 +333,7 @@ public class ParserServiceSiker extends ParserServiceAbstract {
                         prod.getProductsDescriptionOpencart().add(descriptionOpencart);
                         prod.setStockStatusId(getStockStatus(doc));
 
-                        Elements elementManufacturer = doc.select(".red-link");
                         String manufacturerName = "non";
-                        if (!elementManufacturer.isEmpty()) {
-                            manufacturerName = elementManufacturer.text().trim();
-                        }
-                        log.info("Manufacturer: {}", manufacturerName);
                         ManufacturerApp manufacturerApp = getManufacturerApp(manufacturerName, supplierApp);
                         ProductProfileApp productProfileApp = prod.getProductProfileApp();
                         productProfileApp.setTitle(title);
@@ -337,40 +342,23 @@ public class ParserServiceSiker extends ParserServiceAbstract {
                         productProfileApp.setPrice(prod.getPrice());
                         ProductProfileApp savedProductProfile = getProductProfile(productProfileApp, supplierApp);
                         prod.setProductProfileApp(savedProductProfile);
+                        Elements status = doc.select(".stock-status-item-card > div");
+                        if(status.isEmpty()){
+                            status = doc.select("div.in-stock");
+                        }
+                        prod.setQuantity(toCenturStatus(status.text()));  //set product status !!!(((
 
                         log.info("Product price for profile: {}", prod.getPrice());
-
-
-                        Elements attributeElement = doc.select("#tab-specification tbody tr");
-
-
-                        List<AttributeWrapper> attributeWrappers = attributeElement
-                                .stream()
-                                .map(row -> {
-
-                                    Elements td = row.select("td");
-                                    if (td.size() == 2) {
-                                        String key = td.get(0).text().trim();
-                                        String value = td.get(1).text().trim();
-                                        log.info("Key: {}, value: {}", key, value);
-                                        AttributeWrapper attributeWrapper = new AttributeWrapper(key, value, null);
-                                        AttributeWrapper attribute = getAttribute(attributeWrapper, supplierApp, savedProductProfile);
-                                        return attribute;
-                                    } else {
-                                        return null;
-                                    }
-
-                                })
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toList());
-                        prod.getAttributesWrapper().addAll(attributeWrappers);
 
                         setManufacturer(prod, supplierApp);
                         setPriceWithMarkup(prod);
 
 
-                        Elements imageElements = doc.select(".images-additional a");
+                        Elements imageElements = doc.select(".gallery-photos-slider a");
                         log.info("Images count: {}", imageElements.size());
+                        if (imageElements.isEmpty()){
+                            imageElements = doc.select(".gallery-item a");
+                        }
 
                         AtomicInteger countImg = new AtomicInteger();
                         List<ImageOpencart> productImages = imageElements
@@ -424,10 +412,22 @@ public class ParserServiceSiker extends ParserServiceAbstract {
         return fullProducts;
     }
 
+    private int toCenturStatus(String text) {
+        switch (text){
+            case "Наявність уточнюйте":
+                return 2;
+            case "В наявності":
+                return 100;
+            case "Під замовлення":
+                return 33;
+            default:
+                return 33;
+        }
+    }
+
     private int getStockStatus(Document doc) {
         return doc.select(".alert-alt").text().equals("Є в наявності") ? 7 : 5;
     }
-
     @Override
     public ProductProfileApp getProductProfile(ProductProfileApp productProfileApp, SupplierApp supplierApp) {
         List<ProductProfileApp> productProfilesAppDB = supplierApp.getProductProfilesApp();
