@@ -6,8 +6,7 @@ import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.TextNode;
-import org.jsoup.safety.Safelist;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import orlov.home.centurapp.dto.AttributeWrapper;
 import orlov.home.centurapp.dto.OpencartDto;
@@ -16,8 +15,8 @@ import orlov.home.centurapp.entity.opencart.*;
 import orlov.home.centurapp.service.api.translate.TranslateService;
 import orlov.home.centurapp.service.appservice.FileService;
 import orlov.home.centurapp.service.appservice.ScraperDataUpdateService;
-import orlov.home.centurapp.service.daoservice.app.*;
-import orlov.home.centurapp.service.daoservice.opencart.*;
+import orlov.home.centurapp.service.daoservice.app.AppDaoService;
+import orlov.home.centurapp.service.daoservice.opencart.OpencartDaoService;
 import orlov.home.centurapp.util.AppConstant;
 import orlov.home.centurapp.util.OCConstant;
 
@@ -26,7 +25,6 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -892,6 +890,20 @@ public abstract class ParserServiceAbstract implements ParserService {
         return "<span class=\"centurapp\" style=\"white-space: pre-wrap; font-size: 16px; \">".concat(result).concat("</span>");
     }
 
+    public String wrapToHtml(String text, Elements lines) {
+        String result = text.replaceAll("\n", "</br>");
+        if (!lines.text().isEmpty()) {
+            return "<span class=\"centurapp\" style=\"white-space: pre-wrap; font-size: 16px; \">"
+                    .concat(result)
+                    .concat("<br>")
+                    .concat("<br>")
+                    .concat("<b>ХАРАКТЕРИСТИКА</b>")
+                    .concat(lines.stream().map(Element::text).collect(Collectors.joining("<br>", "<br>", "")))
+                    .concat("</span>");
+        } else {
+            return wrapToHtml(text);
+        }
+    }
 //    public String cleanJsoup(String html) {
 //        Document document = Jsoup.parse(html);
 //        document.outputSettings(new Document.OutputSettings().prettyPrint(false));//makes html() preserve linebreaks and spacing

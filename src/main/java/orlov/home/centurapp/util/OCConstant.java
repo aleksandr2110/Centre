@@ -31,7 +31,7 @@ public class OCConstant {
     public static final BigDecimal WIDTH = new BigDecimal(0);
     public static final BigDecimal HEIGHT = new BigDecimal(0);
     public static final int LENGTH_CLASS_ID = 0;
-    public static final boolean SUBTRACT = true;
+    public static final boolean SUBTRACT = false;
     public static final int MINIMUM = 1;
     public static final int SORT_ORDER = 0;
     public static final boolean STATUS = true;

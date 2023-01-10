@@ -21,7 +21,6 @@ import orlov.home.centurapp.util.OCConstant;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -69,14 +68,18 @@ public class ParserServiceZapovit extends ParserServiceAbstract {
 
             List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
 
+            List<ProductOpencart> fullProductsData = getFullProductsData(productsFromSite, supplierApp);
 
+            OpencartDto opencartInfo = getOpencartInfo(fullProductsData, supplierApp);
 
-            OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
             checkPrice(opencartInfo, supplierApp);
-            List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
 
-            fullProductsData
-                    .forEach(opencartDaoService::saveProductOpencart);
+            checkStockStatusId(opencartInfo, supplierApp);
+
+            List<ProductOpencart> newProduct = opencartInfo.getNewProduct();
+
+            newProduct.forEach(opencartDaoService::saveProductOpencart);
+            updateDataService.updatePrice(supplierApp.getSupplierAppId());
 
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
@@ -375,12 +378,13 @@ public class ParserServiceZapovit extends ParserServiceAbstract {
                                         .stream()
                                         .map(ie -> {
                                             //fixme: need to test
-                                            String stringUrl = ie.select("img").attr("src").replaceAll("120x120", "1920x1080");
+                                            String stringUrl = ie.attr("href");
                                             String url = SUPPLIER_PART_URL.concat(stringUrl);
 
                                             String format = url.substring(url.lastIndexOf("."));
-                                            String imageName = p.getModel().concat("_").concat(String.valueOf(countImage.addAndGet(1))).concat(format);
-                                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(imageName);
+                                            String imageName = p.getModel().concat("_").concat(String.valueOf(countImage.addAndGet(1)))
+                                                    .concat(format);
+                                            String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
                                             log.info("image url: {}", url);
                                             log.info("image name: {}", imageName);
                                             log.info("dbImg path: {}", dbImgPath);

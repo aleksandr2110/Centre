@@ -1,6 +1,7 @@
 package orlov.home.centurapp.dao.app;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.namedparam.*;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @Repository
 @AllArgsConstructor
+@Slf4j
 public class ProductAppDao implements Dao<ProductApp> {
 
     private final NamedParameterJdbcTemplate jdbcTemplateApp;
@@ -25,7 +27,11 @@ public class ProductAppDao implements Dao<ProductApp> {
                 "values (:orderProcessId, :name, :url, :status, :oldPrice, :newPrice)";
 
         SqlParameterSource[] data = SqlParameterSourceUtils.createBatch(productsApp);
-        jdbcTemplateApp.batchUpdate(sql, data);
+        try {
+            jdbcTemplateApp.batchUpdate(sql, data);
+        }catch (Exception e){
+           log.error("Error during saving new product :",e); // FIXME: 05.01.2023 save exception
+        }
     }
 
     @Override

@@ -6,12 +6,9 @@ import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import orlov.home.centurapp.dao.Dao;
 import orlov.home.centurapp.entity.opencart.ProductDescriptionOpencart;
-import orlov.home.centurapp.entity.opencart.ProductOpencart;
 
 import java.util.List;
 
@@ -26,7 +23,11 @@ public class ProductDescriptionOpencartDao implements Dao<ProductDescriptionOpen
     public int save(ProductDescriptionOpencart productDescriptionOpencart) {
         String sql = "insert into oc_product_description (product_id, language_id, name, description, tag, meta_title, meta_description, meta_keyword, meta_h1, description1)" +
                 "values (:productId, :languageId, :name, :description, :tag, :metaTitle, :metaDescription, :metaKeyword, :metaH1, :description1)";
-        jdbcTemplateOpencart.update(sql, new BeanPropertySqlParameterSource(productDescriptionOpencart));
+        try {
+            jdbcTemplateOpencart.update(sql, new BeanPropertySqlParameterSource(productDescriptionOpencart));
+        } catch (Exception e) {
+            log.error("Error during saving description :", e);  // FIXME: 05.01.2023 Save exception
+        }
         return 0;
     }
 
@@ -56,7 +57,7 @@ public class ProductDescriptionOpencartDao implements Dao<ProductDescriptionOpen
         return productDescriptionOpencart;
     }
 
-    public void updateBatch(List<ProductDescriptionOpencart> descriptions){
+    public void updateBatch(List<ProductDescriptionOpencart> descriptions) {
         String SQL = "update oc_product_description " +
                 "set name             = :name, " +
                 "    description      = :description " +
@@ -64,7 +65,7 @@ public class ProductDescriptionOpencartDao implements Dao<ProductDescriptionOpen
                 "  and product_id = :productId;";
         SqlParameterSource[] batch = SqlParameterSourceUtils.createBatch(descriptions.toArray());
 
-        int[] updateCounts = jdbcTemplateOpencart.batchUpdate(SQL,batch);
+        int[] updateCounts = jdbcTemplateOpencart.batchUpdate(SQL, batch);
         log.info("Records updated! Update counts: {}", updateCounts);
     }
 
