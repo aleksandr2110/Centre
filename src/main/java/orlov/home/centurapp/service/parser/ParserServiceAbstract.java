@@ -918,4 +918,17 @@ public abstract class ParserServiceAbstract implements ParserService {
     public void updateProductSupplierOpencartBySupplierApp(SupplierApp supplierApp) {
         scraperDataUpdateService.updateProductSupplierOpencartBySupplierApp(supplierApp);
     }
+
+    protected Integer toCenturStatus(String text) {
+        switch (text){
+            case "Наявність уточнюйте":
+                return 2;
+            case "В наявності":
+                return 100;
+            case "Під замовлення":
+                return 33;
+            default:
+                throw  new RuntimeException("Bad status from vendor site");
+        }
+    }
 }

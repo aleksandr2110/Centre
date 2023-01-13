@@ -56,6 +56,8 @@ public class ManagerService {
     private final ParserServiceSiker parserServiceSiker;
     private final ParserServiceZapovit parserServiceZapovit;
     private final ParserServiceGrillex parserServiceGrillex;
+    private final ParserServiceArmEco parserServiceArmEco;
+    private final ParserServiceTechnostyle parserServiceTechnostyle;
     private final OpencartDaoService opencartDaoService;
     private final AppDaoService appDaoService;
     private final UpdateDataService updateDataService;
@@ -165,6 +167,8 @@ public class ManagerService {
             while (true) {
                 try {
                     log.info("Start global process");
+                    parserServiceArmEco.doProcess();
+                    parserServiceTechnostyle.doProcess();
                     parserServiceGrillex.doProcess();
                     parserServiceZapovit.doProcess();
                     parserServiceFrizel.doProcess();
