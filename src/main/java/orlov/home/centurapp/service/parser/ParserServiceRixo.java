@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
+import orlov.home.centurapp.dto.AttributeWrapper;
 import orlov.home.centurapp.dto.OpencartDto;
 import orlov.home.centurapp.entity.app.*;
 import orlov.home.centurapp.entity.opencart.*;
@@ -25,11 +26,11 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class ParserServiceGrillex extends ParserServiceAbstract {
+public class ParserServiceRixo extends ParserServiceAbstract {
 
-    private final String SUPPLIER_NAME = "grillex";
-    private final String SUPPLIER_URL = "https://grillex.com.ua/";
-    private final String DISPLAY_NAME = "98 - Grillex";
+    private final String SUPPLIER_NAME = "rixo";
+    private final String SUPPLIER_URL = "https://rixo.com.ua/";
+    private final String DISPLAY_NAME = "67 - RIXO";
 
     private final AppDaoService appDaoService;
     private final OpencartDaoService opencartDaoService;
@@ -38,7 +39,7 @@ public class ParserServiceGrillex extends ParserServiceAbstract {
     private final UpdateDataService updateDataService;
     private final ImageService imageService;
 
-    public ParserServiceGrillex(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, AppDaoService appDaoService1, OpencartDaoService opencartDaoService1, TranslateService translateService1, FileService fileService1, UpdateDataService updateDataService, ImageService imageService) {
+    public ParserServiceRixo(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, AppDaoService appDaoService1, OpencartDaoService opencartDaoService1, TranslateService translateService1, FileService fileService1, UpdateDataService updateDataService, ImageService imageService) {
         super(appDaoService, opencartDaoService, scraperDataUpdateService, translateService, fileService);
         this.appDaoService = appDaoService1;
         this.opencartDaoService = opencartDaoService1;
@@ -52,6 +53,7 @@ public class ParserServiceGrillex extends ParserServiceAbstract {
     public void doProcess() {
         try {
 
+            OrderProcessApp orderProcessApp = new OrderProcessApp();
             Timestamp start = new Timestamp(Calendar.getInstance().getTime().getTime());
 
             SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
@@ -78,13 +80,13 @@ public class ParserServiceGrillex extends ParserServiceAbstract {
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
             Timestamp end = new Timestamp(Calendar.getInstance().getTime().getTime());
-            OrderProcessApp orderProcessApp = opencartInfo.getOrderProcessApp();
+            orderProcessApp = opencartInfo.getOrderProcessApp();
             orderProcessApp.setStartProcess(start);
             orderProcessApp.setEndProcess(end);
             appDaoService.saveOrderDataApp(orderProcessApp);
 
         } catch (Exception ex) {
-            log.warn("Exception parsing nowystyle", ex);  // FIXME: 24.12.2022 Save exception description
+            log.warn("Exception parsing", ex);  // FIXME: 24.12.2022 Save exception description
         }
     }
 
@@ -96,12 +98,12 @@ public class ParserServiceGrillex extends ParserServiceAbstract {
 
         AtomicInteger countMainCategory = new AtomicInteger();
         if (Objects.nonNull(doc)) {
-            List<CategoryOpencart> mainCategories = doc.select(".main-categories-list > li >div > div > a")
+            List<CategoryOpencart> mainCategories = doc.select(".dropdown-menu-catalog > div a")
                     .stream()
                     .map(ec -> {
 
                         String url = ec.attr("href");
-                        String title = ec.select("img").attr("alt");
+                        String title = ec.text();
                         log.info("{}. Main site category title: {}, url: {}", countMainCategory.addAndGet(1), title, url);
                         CategoryOpencart categoryOpencart = new CategoryOpencart.Builder()
                                 .withUrl(url)
@@ -123,12 +125,19 @@ public class ParserServiceGrillex extends ParserServiceAbstract {
 
             log.info("Main category size: {}", mainCategories.size());
 
-
-            return mainCategories
+            List<CategoryOpencart> siteCategoryList = mainCategories
                     .stream()
                     .map(sc -> recursiveCollectListCategory(sc, supplierCategoryOpencartDB))
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList());
+            siteCategoryList.add(supplierApp.getMainSupplierCategory());
+            siteCategoryList.add(supplierApp.getGlobalSupplierCategory());
+
+            siteCategoryList
+                    .forEach(c -> log.info("Full Site category: {}, subCategorySize: {}", c.getDescriptions().get(0).getName(), c.getCategoriesOpencart().size()));
+
+            return siteCategoryList;
+
         }
         return new ArrayList<>();
     }
@@ -136,7 +145,8 @@ public class ParserServiceGrillex extends ParserServiceAbstract {
     @Override
     public CategoryOpencart recursiveWalkSiteCategory(CategoryOpencart category) {
 
-        return null;
+
+        return category;
     }
 
     @Override
@@ -145,156 +155,95 @@ public class ParserServiceGrillex extends ParserServiceAbstract {
         List<ProductOpencart> allProductInitList = new ArrayList<>();
 
         categoriesWithProduct
+                .stream()
+                .filter(c -> {
+                    int categoryId = c.getCategoryId();
+                    List<CategoryOpencart> childrenCategory = categoriesWithProduct.stream().filter(sub -> sub.getParentId() == categoryId).collect(Collectors.toList());
+                    return childrenCategory.isEmpty();
+                })
                 .forEach(c -> {
 
                     String categoryName = c.getDescriptions().get(0).getName();
                     CategoryApp categoryApp = getCategoryApp(categoryName, supplierApp);
                     String url = c.getUrl();
 
-                    Elements nextPage;
-                    do {
-                        Document doc = getWebDocument(url, new HashMap<>());
-                        try {
-                            if (Objects.nonNull(doc)) {
+                    List<CategoryOpencart> parentsCategories = getParentsCategories(c, categoriesWithProduct);
 
-                                Elements elementsProduct = doc.select(".cat-item-wrapper");
+                    Document doc = getWebDocument(url, new HashMap<>());
+                    try {
+                        if (Objects.nonNull(doc)) {
 
-                                if (elementsProduct.isEmpty()) {
-                                    elementsProduct = doc.select(".item-wrapper");
-                                    getProductsInitDataByCategoryFirst(allProductInitList, supplierApp, categoryApp,
-                                            elementsProduct, c);
-                                } else {
-                                    getProductsInitDataByCategorySecond(allProductInitList, supplierApp, categoryApp,
-                                            elementsProduct, c);
-                                }
-                            }
-                        } catch (Exception e) {
-                            log.warn("Problem iterate page", e);
+                            Elements elementsProduct = doc.select(".product-item");
+                            log.info("Count product: {} on page: {}", elementsProduct.size(), url);
+                            elementsProduct
+                                    .stream()
+                                    .map(ep -> {
+                                        log.info("");
+                                        String urlProduct = ep.select(".product-item__model > a").attr("href");
+                                        log.info("Product url: {}", urlProduct);
+                                        String title = ep.select(".product-item__model > a").text();
+                                        log.info("Product title: {}", title);
+                                        String sku = title.substring(title.lastIndexOf(' ') + 1)
+                                                .replaceAll("/", "");
+                                        log.info("Product sku: {}", sku);
+                                        String model = generateModel(sku, "0000");
+                                        log.info("Product model: {}", model);
+                                        String textPrice = ep.select(".product-item__price").text()
+                                                .replace(" грн", "").replaceAll(" ", "");
+                                        BigDecimal price = new BigDecimal("0");
+                                        if (!textPrice.isEmpty()) {
+                                            price = new BigDecimal(textPrice);
+                                        }
+                                        log.info("Product price: {}", price);
+                                        String urlImage = ep.select(" img").attr("src").replace("228x210", "700x700");
+                                        log.info("Product url image: {}", urlImage);
+                                        String imageName = urlImage.substring(urlImage.lastIndexOf("/") + 1);
+
+                                        imageName = sku.concat("-").concat(imageName);
+                                        log.info("Product image name: {}", imageName);
+                                        String imageDBName = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
+                                        log.info("Product image db name: {}", imageDBName);
+                                        downloadImage(urlImage, imageDBName);
+
+                                        ProductProfileApp productProfileApp = new ProductProfileApp.Builder()
+                                                .withTitle(title)
+                                                .withUrl(urlProduct)
+                                                .withSku(sku)
+                                                .withPrice(price)
+                                                .withSupplierId(supplierApp.getSupplierAppId())
+                                                .withSupplierApp(supplierApp)
+                                                .withCategoryId(categoryApp.getCategoryId())
+                                                .withCategoryApp(categoryApp)
+                                                .build();
+
+                                        ProductOpencart product = new ProductOpencart.Builder()
+                                                .withTitle(title)
+                                                .withUrlProduct(urlProduct)
+                                                .withModel(model)
+                                                .withSku(sku)
+                                                .withImage(imageDBName)
+                                                .withPrice(price)
+                                                .withItuaOriginalPrice(price)
+                                                .withJan(supplierApp.getName())
+                                                .withProductProfileApp(productProfileApp)
+                                                .build();
+                                        product.setCategoriesOpencart(parentsCategories);
+
+                                        if (!allProductInitList.contains(product)) {
+                                            allProductInitList.add(product);
+                                        }
+
+                                        return product;
+                                    })
+                                    .collect(Collectors.toList());
+
                         }
-                        nextPage = doc.select(".nextpostslink");
-                        url = nextPage.attr("href");
-                    } while (nextPage.size() != 0);
+                    } catch (Exception e) {
+                        log.warn("Problem iterate page", e);
+                    }
                 });
 
         return allProductInitList;
-    }
-
-    private void getProductsInitDataByCategoryFirst(List<ProductOpencart> allProductInitList, SupplierApp supplierApp,
-                                                    CategoryApp categoryApp, Elements elementsProduct, CategoryOpencart c) {
-        elementsProduct
-                .forEach(ep -> {
-                    String urlProduct = ep.select(".item-img > a").attr("href");
-                    log.info("Product url: {}", urlProduct);
-                    String title = ep.select(".item-img > a").attr("title");
-                    log.info("Product title: {}", title);
-                    String sku = ep.select(".cat-item-code").text().replace("код", "").trim();
-                    log.info("Product sku: {}", sku);
-                    String model = generateModel(sku, "0000");
-                    log.info("Product model: {}", model);
-                    String textPrice = ep.select(".price").text().replace("грн.", "")
-                            .replaceAll(" ", "");
-                    BigDecimal price = new BigDecimal("0");
-                    if (!textPrice.isEmpty()) {
-                        price = new BigDecimal(textPrice);
-                    }
-                    log.info("Product price: {}", price);
-                    String urlImage = ep.select(".item-img img").attr("src");
-                    log.info("Product url image: {}", urlImage);
-                    String imageName = urlImage.substring(urlImage.lastIndexOf("/") + 1);
-
-                    imageName = sku.concat("-").concat(imageName);
-                    log.info("Product image name: {}", imageName);
-                    String imageDBName = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
-                    log.info("Product image db name: {}", imageDBName);
-                    downloadImage(urlImage, imageDBName);
-
-                    ProductProfileApp productProfileApp = new ProductProfileApp.Builder()
-                            .withTitle(title)
-                            .withUrl(urlProduct)
-                            .withSku(sku)
-                            .withPrice(price)
-                            .withSupplierId(supplierApp.getSupplierAppId())
-                            .withSupplierApp(supplierApp)
-                            .withCategoryId(categoryApp.getCategoryId())
-                            .withCategoryApp(categoryApp)
-                            .build();
-
-                    ProductOpencart product = new ProductOpencart.Builder()
-                            .withTitle(title)
-                            .withUrlProduct(urlProduct)
-                            .withModel(model)
-                            .withSku(sku)
-                            .withImage(imageDBName)
-                            .withPrice(price)
-                            .withItuaOriginalPrice(price)
-                            .withJan(supplierApp.getName())
-                            .withProductProfileApp(productProfileApp)
-                            .build();
-                    product.setCategoriesOpencart(Arrays.asList(c));
-
-                    if (!allProductInitList.contains(product)) {
-                        allProductInitList.add(product);
-                    }
-                });
-    }
-
-    private void getProductsInitDataByCategorySecond(List<ProductOpencart> allProductInitList, SupplierApp supplierApp,
-                                                     CategoryApp categoryApp, Elements elementsProduct, CategoryOpencart c) {
-        elementsProduct
-                .forEach(ep -> {
-                    String urlProduct = ep.select(".cat-item-title > a").attr("href");
-                    log.info("Product url: {}", urlProduct);
-                    String title = ep.select(".cat-item-title > a").text();
-                    log.info("Product title: {}", title);
-                    String sku = ep.select(".cat-item-code > span").text();
-                    log.info("Product sku: {}", sku);
-                    String model = generateModel(sku, "0000");
-                    log.info("Product model: {}", model);
-                    String textPrice = ep.select(".cat-item-price span").get(0).text()
-                            .replace(" ", "");
-                    BigDecimal price = new BigDecimal("0");
-                    if (!textPrice.isEmpty()) {
-                        price = new BigDecimal(textPrice);
-                    }
-                    log.info("Product price: {}", price);
-                    String urlImage = ep.select(".img img").attr("src");
-                    log.info("Product url image: {}", urlImage);
-                    String imageName = urlImage.substring(urlImage.lastIndexOf("/") + 1);
-
-                    imageName = sku.concat("-").concat(imageName);
-                    log.info("Product image name: {}", imageName);
-                    String imageDBName = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
-                    log.info("Product image db name: {}", imageDBName);
-                    downloadImage(urlImage, imageDBName);
-
-                    ProductProfileApp productProfileApp = new ProductProfileApp.Builder()
-                            .withTitle(title)
-                            .withUrl(urlProduct)
-                            .withSku(sku)
-                            .withPrice(price)
-                            .withSupplierId(supplierApp.getSupplierAppId())
-                            .withSupplierApp(supplierApp)
-                            .withCategoryId(categoryApp.getCategoryId())
-                            .withCategoryApp(categoryApp)
-                            .build();
-
-                    ProductOpencart product = new ProductOpencart.Builder()
-                            .withTitle(title)
-                            .withUrlProduct(urlProduct)
-                            .withModel(model)
-                            .withSku(sku)
-                            .withImage(imageDBName)
-                            .withPrice(price)
-                            .withItuaOriginalPrice(price)
-                            .withJan(supplierApp.getName())
-                            .withProductProfileApp(productProfileApp)
-                            .build();
-                    product.setCategoriesOpencart(Arrays.asList(c));
-
-                    if (!allProductInitList.contains(product)) {
-                        allProductInitList.add(product);
-                    }
-                });
     }
 
     @Override
@@ -313,13 +262,10 @@ public class ParserServiceGrillex extends ParserServiceAbstract {
                     try {
 
                         String title = prod.getTitle();
-                        Elements elementDescription = doc.select(".description-block div.text");
+                        Elements elementDescription = doc.select(".product-info__description > p");
                         String description = "";
                         if (!elementDescription.isEmpty()) {
-                            doc.select(".all-tech-features-list").text();
-                            description = wrapToHtml(cleanDescription(elementDescription.first()),
-                                    doc.select(".all-tech-features-list > li > ul > li > ul > li"));
-                            description = description.replaceAll("\uD83D\uDE09", "");
+                            description = wrapToHtml(cleanDescription(elementDescription.first()));
                         }
 
                         ProductDescriptionOpencart descriptionOpencart = new ProductDescriptionOpencart.Builder()
@@ -328,8 +274,9 @@ public class ParserServiceGrillex extends ParserServiceAbstract {
                                 .withLanguageId(OCConstant.UA_LANGUAGE_ID)
                                 .build();
                         prod.getProductsDescriptionOpencart().add(descriptionOpencart);
+                        prod.setQuantity(100);
 
-                        String manufacturerName = "non";
+                        String manufacturerName = "Rixo";
                         ManufacturerApp manufacturerApp = getManufacturerApp(manufacturerName, supplierApp);
                         ProductProfileApp productProfileApp = prod.getProductProfileApp();
                         productProfileApp.setTitle(title);
@@ -338,23 +285,40 @@ public class ParserServiceGrillex extends ParserServiceAbstract {
                         productProfileApp.setPrice(prod.getPrice());
                         ProductProfileApp savedProductProfile = getProductProfile(productProfileApp, supplierApp);
                         prod.setProductProfileApp(savedProductProfile);
-                        Elements status = doc.select(".stock-status-item-card > div");
-                        if (status.isEmpty()) {
-                            status = doc.select("div.in-stock");
-                        }
-                        prod.setQuantity(toCenturStatus(status.text()));  //set product status !!!(((
 
                         log.info("Product price for profile: {}", prod.getPrice());
+
+
+                        Elements attributeElement = doc.select(".product-characteristics__table > table tr");
+
+
+                        List<AttributeWrapper> attributeWrappers = attributeElement
+                                .stream()
+                                .map(row -> {
+
+                                    Elements td = row.select("td");
+                                    if (td.size() == 2) {
+                                        String key = td.get(0).text().trim();
+                                        String value = td.get(1).text().trim();
+                                        log.info("Key: {}, value: {}", key, value);
+                                        AttributeWrapper attributeWrapper = new AttributeWrapper(key, value, null);
+                                        AttributeWrapper attribute = getAttribute(attributeWrapper, supplierApp, savedProductProfile);
+                                        return attribute;
+                                    } else {
+                                        return null;
+                                    }
+
+                                })
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toList());
+                        prod.getAttributesWrapper().addAll(attributeWrappers);
 
                         setManufacturer(prod, supplierApp);
                         setPriceWithMarkup(prod);
 
 
-                        Elements imageElements = doc.select(".gallery-photos-slider a");
+                        Elements imageElements = doc.select(".thumbnails > a");
                         log.info("Images count: {}", imageElements.size());
-                        if (imageElements.isEmpty()) {
-                            imageElements = doc.select(".gallery-item a");
-                        }
 
                         AtomicInteger countImg = new AtomicInteger();
                         List<ImageOpencart> productImages = imageElements

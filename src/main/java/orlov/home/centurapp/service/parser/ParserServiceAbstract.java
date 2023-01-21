@@ -919,16 +919,20 @@ public abstract class ParserServiceAbstract implements ParserService {
         scraperDataUpdateService.updateProductSupplierOpencartBySupplierApp(supplierApp);
     }
 
-    protected Integer toCenturStatus(String text) {
-        switch (text){
+    protected Integer toCenturStatus(String textStatus) {
+        switch (textStatus) {
             case "Наявність уточнюйте":
                 return 2;
+            case "Є В НАЯВНОСТІ":
             case "В наявності":
                 return 100;
+            case "ПІД ЗАМОВЛЕННЯ":
             case "Під замовлення":
                 return 33;
+            case "НЕМА В НАЯВНОСТІ":
+                return 0;
             default:
-                throw  new RuntimeException("Bad status from vendor site");
+                throw new RuntimeException("Bad status[" + textStatus + "] from vendor site");
         }
     }
 }

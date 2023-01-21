@@ -42,7 +42,11 @@ public class ProductOpencartDao implements Dao<ProductOpencart> {
                 "                        :dataAdded,:dataModified, :noindex, " +
                 "                        :currencyId, :obmenId, :ituaOriginalCurId, :ituaOriginalPrice, :stickerId, :sticker2Id, :uuid, :afValues, :afTags)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplateOpencart.update(sqlSaveProduct, new BeanPropertySqlParameterSource(product), keyHolder, new String[]{"product_id"});
+        try {
+            jdbcTemplateOpencart.update(sqlSaveProduct, new BeanPropertySqlParameterSource(product), keyHolder, new String[]{"product_id"});
+        }catch (Exception e){
+            log.info("Exception during saving product : ",e);  // FIXME: 21.01.2023 sent exception to manager
+        }
         int id = keyHolder.getKey().intValue();
         return id;
     }
