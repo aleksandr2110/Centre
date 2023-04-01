@@ -539,7 +539,7 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
                     if (Objects.nonNull(productOpencart)) {
                         int id = productOpencart.getId();
                         Document webDocument = getWebDocument(url, cookies);
-                        String description = getDescription(webDocument);//
+                        String description = getDescription(webDocument);
                         ProductDescriptionOpencart desc = new ProductDescriptionOpencart.Builder()
                                 .withProductId(id)
                                 .withLanguageId(OCConstant.UA_LANGUAGE_ID)
