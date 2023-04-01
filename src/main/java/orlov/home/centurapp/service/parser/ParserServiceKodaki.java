@@ -1,9 +1,9 @@
 package orlov.home.centurapp.service.parser;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-import org.omg.CORBA.Object;
 import org.springframework.stereotype.Service;
 import orlov.home.centurapp.dto.AttributeWrapper;
 import orlov.home.centurapp.dto.OpencartDto;
@@ -12,10 +12,12 @@ import orlov.home.centurapp.entity.opencart.*;
 import orlov.home.centurapp.service.api.translate.TranslateService;
 import orlov.home.centurapp.service.appservice.FileService;
 import orlov.home.centurapp.service.appservice.ScraperDataUpdateService;
-import orlov.home.centurapp.service.daoservice.app.*;
-import orlov.home.centurapp.service.daoservice.opencart.*;
+import orlov.home.centurapp.service.appservice.UpdateDataService;
+import orlov.home.centurapp.service.daoservice.app.AppDaoService;
+import orlov.home.centurapp.service.daoservice.opencart.OpencartDaoService;
 import orlov.home.centurapp.util.AppConstant;
 import orlov.home.centurapp.util.OCConstant;
+import orlov.home.centurapp.util.ResultCode;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -36,11 +38,14 @@ public class ParserServiceKodaki extends ParserServiceAbstract {
     private final OpencartDaoService opencartDaoService;
     private final TranslateService translateService;
 
-    public ParserServiceKodaki(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService) {
+    private final UpdateDataService updateDataService;
+
+    public ParserServiceKodaki(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, UpdateDataService updateDataService) {
         super(appDaoService, opencartDaoService, scraperDataUpdateService, translateService, fileService);
         this.appDaoService = appDaoService;
         this.opencartDaoService = opencartDaoService;
         this.translateService = translateService;
+        this.updateDataService = updateDataService;
     }
 
 
@@ -52,8 +57,12 @@ public class ParserServiceKodaki extends ParserServiceAbstract {
 
             SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
 
-            List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
-            List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
+            Pair<List<CategoryOpencart>, ResultCode> siteCategories = getSiteCategoriesLocal(supplierApp);
+
+            if(siteCategories.getRight() == ResultCode.BAD_LOAD_WEB_DOCUMENT) {
+                throw  new RuntimeException("Bad load web document in function getSiteCategories");
+            }
+            List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories.getLeft(), supplierApp);
 
 
             OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
@@ -61,9 +70,20 @@ public class ParserServiceKodaki extends ParserServiceAbstract {
 
              List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
 
+
             fullProductsData
                     .forEach(opencartDaoService::saveProductOpencart);
 
+            /*
+            fullProductsData.forEach(p -> {
+                log.info("ParserServiceKodaki {} saveProductOpencart: {}", (p == null), p.toString());
+                opencartDaoService.saveProductOpencart(p);
+            });*/
+            //:TODO update price in function checkPrice
+            /*
+            if(!opencartInfo.getNewProduct().isEmpty()) {
+                updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            }*/
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
             Timestamp end = new Timestamp(Calendar.getInstance().getTime().getTime());
@@ -72,25 +92,32 @@ public class ParserServiceKodaki extends ParserServiceAbstract {
             orderProcessApp.setEndProcess(end);
             appDaoService.saveOrderDataApp(orderProcessApp);
         } catch (Exception ex) {
-            log.warn("Exception parsing nowystyle", ex);
+            log.warn("Exception parsing kodaki", ex);
         }
 
     }
 
-    public void updateAttributeValue() {
-        SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
-        List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
-        List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
-        getFullProductsData(productsFromSite, supplierApp);
-    }
-
     @Override
     public List<CategoryOpencart> getSiteCategories(SupplierApp supplierApp) {
+        //:TODO Тимчасова заміна getSiteCategories
+        return null;
+    }
+
+    public void updateAttributeValue() {
+        SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
+        Pair<List<CategoryOpencart>, ResultCode> siteCategories = getSiteCategoriesLocal(supplierApp);
+        if(siteCategories.getRight() == ResultCode.OK) {
+            List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories.getLeft(), supplierApp);
+            getFullProductsData(productsFromSite, supplierApp);
+        }
+    }
+
+    //@Override
+    public Pair<List<CategoryOpencart>, ResultCode> getSiteCategoriesLocal(SupplierApp supplierApp) {
         List<CategoryOpencart> supplierCategoryOpencartDB = supplierApp.getCategoryOpencartDB();
         HashMap<String, String> cookies = new HashMap<>();
         cookies.put("language", "uk-ua");
         Document doc = getWebDocument(supplierApp.getUrl(), cookies);
-
         if (Objects.nonNull(doc)) {
 
             List<CategoryOpencart> mainCategories = doc.select("ul.nav > li > a")
@@ -115,6 +142,8 @@ public class ParserServiceKodaki extends ParserServiceAbstract {
                     })
                     .filter(c -> c.getUrl().startsWith("https"))
                     .peek(c -> log.info("url category: {}", c.getUrl()))
+                    //:TODO next line uncommitted only debug
+                    //.findFirst().stream()
                     .collect(Collectors.toList());
             log.info("Main category size: {}", mainCategories.size());
 
@@ -136,10 +165,10 @@ public class ParserServiceKodaki extends ParserServiceAbstract {
             siteCategoryList
                     .forEach(c -> log.info("{}. Full Site category: {}, subCategorySize: {}", countCategory.addAndGet(1), c.getDescriptions().get(0).getName(), c.getCategoriesOpencart().size()));
 
-            return siteCategoryList;
+            return Pair.of(siteCategoryList, ResultCode.OK);
 
         }
-        return new ArrayList<>();
+        return Pair.of(new ArrayList<>(), ResultCode.BAD_LOAD_WEB_DOCUMENT);
 
     }
 
@@ -268,6 +297,7 @@ public class ParserServiceKodaki extends ParserServiceAbstract {
                                             String price = "0.0";
                                             if (!priceElement.isEmpty() && !priceElement.text().isEmpty()) {
                                                 price = priceElement.text().replaceAll("[^\\d.]", "");
+                                                price = price.replaceAll("[.]$","");
                                             }
 
                                             log.info("Product price: {}", price);
@@ -327,7 +357,7 @@ public class ParserServiceKodaki extends ParserServiceAbstract {
 
 
                             } catch (Exception e) {
-                                log.warn("Problem iterate page", e);
+                                log.warn("Problem iterate page kodaki ", e);
                             } finally {
                                 countPage++;
                             }
@@ -471,7 +501,7 @@ public class ParserServiceKodaki extends ParserServiceAbstract {
                             }
 
                         } catch (Exception ex) {
-                            log.warn("Bad parsing product data", ex);
+                            log.warn("Bad parsing product data kodaki ", ex);
                         }
                     } else {
                         p.setId(-1);

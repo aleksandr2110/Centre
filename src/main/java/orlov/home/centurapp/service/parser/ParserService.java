@@ -1,5 +1,6 @@
 package orlov.home.centurapp.service.parser;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import orlov.home.centurapp.entity.app.*;
 import orlov.home.centurapp.entity.opencart.AttributeOpencart;
 import orlov.home.centurapp.entity.opencart.CategoryOpencart;
 import orlov.home.centurapp.entity.opencart.ProductOpencart;
+import orlov.home.centurapp.util.ResultCode;
 
 import javax.websocket.server.ServerEndpoint;
 import java.math.BigDecimal;

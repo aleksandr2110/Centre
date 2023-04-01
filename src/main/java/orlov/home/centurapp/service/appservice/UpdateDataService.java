@@ -43,7 +43,7 @@ public class UpdateDataService {
     private final CategoryAppService categoryAppService;
     private final OrderProcessAppService orderProcessAppService;
     private final ProductAppService productAppService;
-    private final String dirImage = FileService.imageDirOC;
+    //private final String dirImage = fileService.getImageDirOc();
     private final OpencartDaoService opencartDaoService;
 
     public Path getZipFileImage(int supplierId) {
@@ -64,10 +64,10 @@ public class UpdateDataService {
                             .stream()
                             .map(i -> {
                                 String image = i.getImage();
-                                return dirImage.concat(image);
+                                return fileService.getImageDirOc().concat(image);
                             })
                             .collect(Collectors.toList());
-                    String mainImage = dirImage.concat(p.getImage());
+                    String mainImage = fileService.getImageDirOc().concat(p.getImage());
                     imagesAbsolutePath.add(mainImage);
                     return imagesAbsolutePath;
                 })
@@ -333,8 +333,13 @@ public class UpdateDataService {
         return value;
     }
 
-
+    public void updatePrice(int supplierId, boolean updateOriginal) {
+        updatePriceByUpdate(supplierId, updateOriginal);
+    }
     public void updatePrice(int supplierId) {
+        updatePriceByUpdate(supplierId, true);
+    }
+    private void updatePriceByUpdate(int supplierId, boolean updateOriginal) {
         SupplierApp supplier = supplierAppService.getById(supplierId);
         log.info("Supplier: {}", supplier);
         List<ProductProfileApp> productProfiles = appDaoService.getAllProductProfileAppBySupplierId(supplierId);
@@ -351,7 +356,7 @@ public class UpdateDataService {
                         productOpencartBySku.setProductProfileApp(p);
                         List<ProductOptionOpencart> options = productOpencartService.getProductOptionsById(productOpencartBySku.getId());
                         productOpencartBySku.setProductOptionsOpencart(options);
-                        setPriceWithMarkup(productOpencartBySku);
+                        setPriceWithMarkup(productOpencartBySku, updateOriginal);
                         return productOpencartBySku;
                     }
                     return null;
@@ -376,7 +381,7 @@ public class UpdateDataService {
     }
 
 
-    public ProductOpencart setPriceWithMarkup(ProductOpencart product) {
+    public ProductOpencart setPriceWithMarkup(ProductOpencart product, boolean updateOriginal) {
         ProductProfileApp productProfileApp = product.getProductProfileApp();
         int markupManufacturer = productProfileApp.getManufacturerApp().getMarkup();
         int markupCategory = productProfileApp.getCategoryApp().getMarkup();
@@ -385,16 +390,23 @@ public class UpdateDataService {
                 markupManufacturer : markupCategory != 0 ?
                 markupCategory : markupSupplier;
 
+        BigDecimal price;
+        if(updateOriginal) {
+            price = product.getProductProfileApp().getPrice();
+        } else {
+            price = product.getItuaOriginalPrice();
+        }
 
-        BigDecimal price = product.getProductProfileApp().getPrice();
 
         double m = markupInt;
         double d = 1 + m / 100;
         BigDecimal markup = new BigDecimal(String.valueOf(d));
         BigDecimal lastPrice = price.multiply(markup).setScale(2, RoundingMode.UP).setScale(4);
-        log.info("sku: {}, lastPrice: {}", product.getSku(), lastPrice);
+        log.info("sku: {}, price {} lastPrice: {}", product.getSku(), price, lastPrice);
         product.setPrice(lastPrice);
-        product.setItuaOriginalPrice(lastPrice);
+        if(updateOriginal) {
+            product.setItuaOriginalPrice(price);
+        }
 
         setOptionPriceWithMarkup(product);
         return product;

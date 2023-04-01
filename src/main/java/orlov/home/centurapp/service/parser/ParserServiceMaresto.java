@@ -13,6 +13,7 @@ import orlov.home.centurapp.entity.opencart.*;
 import orlov.home.centurapp.service.api.translate.TranslateService;
 import orlov.home.centurapp.service.appservice.FileService;
 import orlov.home.centurapp.service.appservice.ScraperDataUpdateService;
+import orlov.home.centurapp.service.appservice.UpdateDataService;
 import orlov.home.centurapp.service.daoservice.app.*;
 import orlov.home.centurapp.service.daoservice.opencart.*;
 import orlov.home.centurapp.service.daoservice.validator.HttpsUrlValidator;
@@ -40,12 +41,14 @@ public class ParserServiceMaresto extends ParserServiceAbstract {
     private final TranslateService translateService;
     private final FileService fileService;
 
-    public ParserServiceMaresto(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, FileService fileService1) {
+    private final UpdateDataService updateDataService;
+
+    public ParserServiceMaresto(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, FileService fileService1, UpdateDataService updateDataService) {
         super(appDaoService, opencartDaoService, scraperDataUpdateService, translateService, fileService);
         this.appDaoService = appDaoService;
         this.opencartDaoService = opencartDaoService;
         this.translateService = translateService;
-
+        this.updateDataService = updateDataService;
         this.fileService = fileService1;
     }
 
@@ -68,7 +71,11 @@ public class ParserServiceMaresto extends ParserServiceAbstract {
 
             fullProductsData
                     .forEach(opencartDaoService::saveProductOpencart);
-
+            //:TODO update price in function checkPrice
+            /*
+            if(!opencartInfo.getNewProduct().isEmpty()) {
+                updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            }*/
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
             Timestamp end = new Timestamp(Calendar.getInstance().getTime().getTime());
@@ -114,6 +121,8 @@ public class ParserServiceMaresto extends ParserServiceAbstract {
                         categoryOpencart.getDescriptions().add(description);
                         return categoryOpencart;
                     })
+                    //:TODO next line uncommitted only debug
+                    //.findFirst().stream()
                     .collect(Collectors.toList());
             log.info("Main category size: {}", mainCategories.size());
             supplierApp.getMainSupplierCategory().getCategoriesOpencart().addAll(mainCategories);

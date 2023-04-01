@@ -96,7 +96,10 @@ public class ParserServiceArtmen extends ParserServiceAbstract {
             translateService.webTranslate(newProduct);
 
             newProduct.forEach(opencartDaoService::saveProductOpencart);
-            updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            //:TODO update price in function checkPrice
+            if(!newProduct.isEmpty()) {
+                updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            }
 
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 

@@ -277,7 +277,7 @@ public class SupplierController {
                 status = 1;
                 supplierApp.setMarkup(newMarkup);
                 supplierAppService.update(supplierApp);
-                updateDataService.updatePrice(supplier.getSupplierAppId());
+                updateDataService.updatePrice(supplier.getSupplierAppId(),false);
             } else {
                 status = -1;
             }

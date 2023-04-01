@@ -19,6 +19,7 @@ import orlov.home.centurapp.entity.opencart.*;
 import orlov.home.centurapp.service.api.translate.TranslateService;
 import orlov.home.centurapp.service.appservice.FileService;
 import orlov.home.centurapp.service.appservice.ScraperDataUpdateService;
+import orlov.home.centurapp.service.appservice.UpdateDataService;
 import orlov.home.centurapp.service.daoservice.app.AppDaoService;
 import orlov.home.centurapp.service.daoservice.opencart.OpencartDaoService;
 import orlov.home.centurapp.util.AppConstant;
@@ -53,12 +54,15 @@ public class ParserServiceRP extends ParserServiceAbstract {
     private final TranslateService translateService;
     private final FileService fileService;
 
-    public ParserServiceRP(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService) {
+    private final UpdateDataService updateDataService;
+
+    public ParserServiceRP(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, UpdateDataService updateDataService) {
         super(appDaoService, opencartDaoService, scraperDataUpdateService, translateService, fileService);
         this.appDaoService = appDaoService;
         this.opencartDaoService = opencartDaoService;
         this.translateService = translateService;
         this.fileService = fileService;
+        this.updateDataService = updateDataService;
     }
 
 
@@ -96,7 +100,11 @@ public class ParserServiceRP extends ParserServiceAbstract {
 
             opencartInfo.getNewProduct()
                     .forEach(opencartDaoService::saveProductOpencart);
-
+            //:TODO update price in function checkPrice
+            /*
+            if(!opencartInfo.getNewProduct().isEmpty()) {
+                updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            }*/
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
             Timestamp end = new Timestamp(Calendar.getInstance().getTime().getTime());
@@ -204,6 +212,8 @@ public class ParserServiceRP extends ParserServiceAbstract {
                         categoryOpencart.getDescriptions().add(description);
                         return categoryOpencart;
                     })
+                    //:TODO next line uncommitted only debug
+                    //.findFirst().stream()
                     .collect(Collectors.toList());
 
 
@@ -551,7 +561,7 @@ public class ParserServiceRP extends ParserServiceAbstract {
                             Elements priceMetaElement = webDocument.select("meta[itemprop=price]");
 
                             String currencyStringPrice = webDocument.select("span#courseEuro").text().replaceAll(",", "\\.").trim();
-                            log.info("currencyStringPrice: {}", currencyStringPrice);
+                            log.info("/: {}", currencyStringPrice);
                             BigDecimal currency = new BigDecimal(currencyStringPrice).setScale(4);
                             log.info("currency: {}", currency);
 
@@ -611,11 +621,12 @@ public class ParserServiceRP extends ParserServiceAbstract {
                                                 if (tdElements.size() == 2 && !tdElements.text().trim().isEmpty()) {
                                                     String key = tdElements.get(0).text();
                                                     String value = tdElements.get(1).text();
-                                                    log.info("");
+                                                    log.info("key {}", key);
+                                                    log.info("value {}", value);
                                                     AttributeWrapper attributeWrapper = new AttributeWrapper(key, value, null);
-//                                                    log.info("Begin attribute: {}", attributeWrapper);
+                                                    log.info("Begin attribute: {}", attributeWrapper);
                                                     AttributeWrapper attribute = getAttribute(attributeWrapper, supplierApp, savedProductProfile);
-//                                                    log.info("Finish attribute: {}", attribute);
+                                                    log.info("Finish attribute: {}", attribute);
                                                     return attribute;
                                                 } else {
                                                     return null;

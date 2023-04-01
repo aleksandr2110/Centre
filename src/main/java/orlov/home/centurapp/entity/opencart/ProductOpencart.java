@@ -63,6 +63,11 @@ public class ProductOpencart {
     private String uuid = OCConstant.EMPTY_STRING;
     private String afValues = OCConstant.EMPTY_STRING;
     private String afTags = OCConstant.EMPTY_STRING;
+    private String youtubeVideo1 = OCConstant.EMPTY_STRING;
+    private String youtubeVideo2 = OCConstant.EMPTY_STRING;
+    private String youtubeVideo3 = OCConstant.EMPTY_STRING;
+    private String youtubeVideo4 = OCConstant.EMPTY_STRING;
+    private String youtubeVideo5 = OCConstant.EMPTY_STRING;
 
     private List<OptionOpencart> optionsOpencart = new ArrayList<>();
     private List<ProductOptionOpencart> productOptionsOpencart = new ArrayList<>();
@@ -344,7 +349,27 @@ public class ProductOpencart {
             return this;
         }
 
+        public Builder withYoutubeVideo1(String youtubeVideo1) {
+            product.youtubeVideo1 = youtubeVideo1;
+            return this;
+        }
+        public Builder withYoutubeVideo2(String youtubeVideo2) {
+            product.youtubeVideo2 = youtubeVideo2;
+            return this;
+        }
 
+        public Builder withYoutubeVideo3(String youtubeVideo3) {
+            product.youtubeVideo3 = youtubeVideo3;
+            return this;
+        }
+        public Builder withYoutubeVideo4(String youtubeVideo4) {
+            product.youtubeVideo4 = youtubeVideo4;
+            return this;
+        }
+        public Builder withYoutubeVideo5(String youtubeVideo5) {
+            product.youtubeVideo5 = youtubeVideo5;
+            return this;
+        }
         public ProductOpencart build() {
             return product;
         }

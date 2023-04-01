@@ -53,6 +53,11 @@ public class ProductOpencartRowMapper implements RowMapper<ProductOpencart> {
                 .withUuid(rs.getString("uuid"))
                 .withAfValues(rs.getString("af_values"))
                 .withAfTags(rs.getString("af_tags"))
+                .withYoutubeVideo1(rs.getString("youtube_1"))
+                .withYoutubeVideo2(rs.getString("youtube_2"))
+                .withYoutubeVideo3(rs.getString("youtube_3"))
+                .withYoutubeVideo4(rs.getString("youtube_4"))
+                .withYoutubeVideo5(rs.getString("youtube_5"))
                 .build();
         return productOpencart;
     }
