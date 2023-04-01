@@ -79,7 +79,9 @@ public class ParserServiceZapovit extends ParserServiceAbstract {
             List<ProductOpencart> newProduct = opencartInfo.getNewProduct();
 
             newProduct.forEach(opencartDaoService::saveProductOpencart);
-            updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            if(!newProduct.isEmpty()) {
+                updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            }
 
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
@@ -123,6 +125,8 @@ public class ParserServiceZapovit extends ParserServiceAbstract {
                         return categoryOpencart;
                     })
                     .peek(c -> log.info("Name category: {}m url: {}", c.getDescriptions().get(0).getName(), c.getUrl()))
+                    //:TODO next line uncommitted only debug
+                    //.findFirst().stream()
                     .collect(Collectors.toList());
             log.info("Main categories size: {}", mainCategories.size());
 

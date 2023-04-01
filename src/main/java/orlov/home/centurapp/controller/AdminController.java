@@ -89,7 +89,7 @@ public class AdminController {
     @GetMapping("/image")
     public String updateImage() {
         log.info("updateImage");
-//        managerService.updateImages();
+       managerService.updateImages();
         return "redirect:/admin/block";
     }
 
@@ -139,7 +139,7 @@ public class AdminController {
     @GetMapping("/fulldesc")
     public String updateDescFull() {
         log.info("updateDescFull");
-//        managerService.updateFullDescription();
+        managerService.updateFullDescription();
         return "redirect:/admin/block";
     }
 

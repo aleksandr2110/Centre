@@ -20,6 +20,7 @@ import orlov.home.centurapp.util.AppConstant;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -156,11 +157,25 @@ public class ProductOpencartService {
     }
 
     public ProductOpencart saveProduct(ProductOpencart productOpencart) {
-        int id = productOpencartDao.save(productOpencart);
+        int id = -1;
+        try {
+            id = productOpencartDao.save(productOpencart);
+            log.info("(ProductOpencart saveProduct) Ok {} save product: {}",id, productOpencart);
+        } catch (Exception e) {
+            //:TODO Fix this save product
+            log.error("(ProductOpencart saveProduct) bad save product: {}",productOpencart, e);
+            return null;
+        }
+
+        List<Integer> categories = productOpencartDao.getCategoryIdByProductId(id);
+
         productOpencart.setId(id);
         log.info("saved product id: {}", id);
         productOpencartDao.saveProductToStore(productOpencart);
-        productOpencartDao.saveProductToCategory(productOpencart);
+
+        if(categories.isEmpty()) {
+            productOpencartDao.saveProductToCategory(productOpencart);
+        }
 
         List<ProductDescriptionOpencart> description = productOpencart.getProductsDescriptionOpencart();
         description

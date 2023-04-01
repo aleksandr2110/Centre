@@ -35,12 +35,14 @@ public class ProductOpencartDao implements Dao<ProductOpencart> {
                 "                        manufacturer_id, shipping, price, points, tax_class_id, date_available, weight, weight_class_id, " +
                 "                        length, width, height, length_class_id, subtract, minimum, sort_order, status, viewed, " +
                 "                        date_added, date_modified, noindex, " +
-                "                        currency_id, obmen_id, itua_original_cur_id, itua_original_price, sticker_id, sticker2_id, uuid, af_values, af_tags) " +
+                "                        currency_id, obmen_id, itua_original_cur_id, itua_original_price, sticker_id, sticker2_id, uuid, af_values, " +
+                "                        af_tags, youtube_1, youtube_2, youtube_3, youtube_4, youtube_5) " +
                 "                 values (:model,:sku,:upc,:ean,:jan,:isbn,:mpn,:location,:quantity,:stockStatusId,:image," +
                 "                        :manufacturerId,:shipping,:price,:points,:taxClassId,:dataAvailable,:weight,:weightClassId," +
                 "                        :length,:width,:height,:lengthClassId,:subtract,:minimum,:sortOrder,:status,:viewed," +
                 "                        :dataAdded,:dataModified, :noindex, " +
-                "                        :currencyId, :obmenId, :ituaOriginalCurId, :ituaOriginalPrice, :stickerId, :sticker2Id, :uuid, :afValues, :afTags)";
+                "                        :currencyId, :obmenId, :ituaOriginalCurId, :ituaOriginalPrice, :stickerId, :sticker2Id, :uuid, :afValues, " +
+                "                         :afTags, :youtubeVideo1, :youtubeVideo2, :youtubeVideo3, :youtubeVideo4, :youtubeVideo5)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
         try {
             jdbcTemplateOpencart.update(sqlSaveProduct, new BeanPropertySqlParameterSource(product), keyHolder, new String[]{"product_id"});
@@ -63,7 +65,7 @@ public class ProductOpencartDao implements Dao<ProductOpencart> {
     }
 
     public void saveProductToCategory(ProductOpencart product) {
-        String sqlToCategory = "insert into oc_product_to_category (product_id, category_id)" +
+            String sqlToCategory = "insert into oc_product_to_category (product_id, category_id)" +
                 "values (:productId, :categoryId)";
         List<CategoryOpencart> categoriesOpencart = product.getCategoriesOpencart();
         categoriesOpencart
@@ -71,6 +73,18 @@ public class ProductOpencartDao implements Dao<ProductOpencart> {
                     Map<String, Integer> dataToCategory = new HashMap<>();
                     dataToCategory.put("productId", product.getId());
                     dataToCategory.put("categoryId", c.getCategoryId());
+                    jdbcTemplateOpencart.update(sqlToCategory, new MapSqlParameterSource(dataToCategory));
+                });
+    }
+    public void saveProductToCategory(ProductOpencart product, List<Integer> catigories) {
+        String sqlToCategory = "insert into oc_product_to_category (product_id, category_id)" +
+                "values (:productId, :categoryId)";
+
+        catigories
+                .forEach(c -> {
+                    Map<String, Integer> dataToCategory = new HashMap<>();
+                    dataToCategory.put("productId", product.getId());
+                    dataToCategory.put("categoryId", c);
                     jdbcTemplateOpencart.update(sqlToCategory, new MapSqlParameterSource(dataToCategory));
                 });
     }

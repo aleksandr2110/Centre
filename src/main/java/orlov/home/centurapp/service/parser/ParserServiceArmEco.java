@@ -77,7 +77,9 @@ public class ParserServiceArmEco extends ParserServiceAbstract {
             List<ProductOpencart> newProduct = opencartInfo.getNewProduct();
 
             newProduct.forEach(opencartDaoService::saveProductOpencart);
-            updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            if(!newProduct.isEmpty()) {
+                updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            }
 
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 

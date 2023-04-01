@@ -1,6 +1,7 @@
 package orlov.home.centurapp.service.appservice;
 
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.ss.usermodel.*;
@@ -11,6 +12,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
 import org.jsoup.safety.Whitelist;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import orlov.home.centurapp.dto.AttributeWrapper;
 import orlov.home.centurapp.dto.FontStyleDto;
@@ -33,14 +35,20 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 public class FileService {
 
 
-    public static final String imageDirOC = "C:/xampp/htdocs/ocapp/image/";
-//            public static final String imageDirOC = "/home/centurwebstarsco/public_html/image/";
+   // public static final String imageDirOC = "C:/xampp/htdocs/ocapp/image/";
+    @Value("${app.image-path-dir}")
+    private  String imageDirOC = null;
+    //public static final String imageDirOC = "/home/andrey/Programing/Freelance/centur/data/image/";
     public static final String PART_PATH = "catalog/app/";
+
+    public  String getImageDirOc() {
+        return imageDirOC;
+    }
 
     public void writeToFile(String filename, String format, String text) {
         String titleFile = filename.concat(".").concat(format);

@@ -1,12 +1,13 @@
 package orlov.home.centurapp.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import orlov.home.centurapp.entity.app.SupplierApp;
 import orlov.home.centurapp.entity.opencart.ImageOpencart;
@@ -30,7 +31,8 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
+@Scope("singleton")
 public class ManagerService {
 
     private final ParserServiceMaresto parserServiceMaresto;
@@ -66,6 +68,10 @@ public class ManagerService {
     private final UpdateDataService updateDataService;
     private final TranslateService translateService;
 
+    private final  FileService fileService;
+
+    private long runIdCoreParser = -1L;
+    private long runIdUpdateAttribute = -1;
 
     public void updateNewModel() {
         new Thread(() -> {
@@ -136,14 +142,21 @@ public class ManagerService {
     }
 
 
-    public void updateAttributeAppValue() {
+    public synchronized void  updateAttributeAppValue() {
+        if(runIdUpdateAttribute != -1) {
+            log.info("Threat updateAttributeAppValue is running id: {}", runIdUpdateAttribute);
+            return;
+        }
         new Thread(() -> {
             try {
+                runIdUpdateAttribute = Thread.currentThread().getId();
                 log.info("Start global process update attribute value");
-//                parserServiceHator.updateAttributeValue();
-//                parserServiceRP.updateAttributeValue();
-//                parserServiceGoodfood.updateAttributeValue();
-//                parserServiceArtinhead.updateAttributeValue();
+//??                parserServiceHator.updateAttributeValue();
+//??                parserServiceRP.updateAttributeValue();
+//??                parserServiceGoodfood.updateAttributeValue();
+//??                parserServiceArtinhead.updateAttributeValue();
+
+               //!! parserServiceUhlmash.updateAttributeValue();
 
                 parserServiceMaresto.updateAttributeValue();
                 parserServiceKodaki.updateAttributeValue();
@@ -152,10 +165,13 @@ public class ManagerService {
                 parserServiceSector.updateAttributeValue();
                 parserServiceTfb2b.updateAttributeValue();
                 parserServiceAstim.updateAttributeValue();
+
                 log.info("End global process update attribute value");
-                TimeUnit.HOURS.sleep(22);
+                //TimeUnit.HOURS.sleep(22);
             } catch (Exception e) {
                 log.warn("Exception main process", e);
+            } finally {
+                runIdUpdateAttribute = -1;
             }
         }).start();
         log.info("Threat is demon");
@@ -165,45 +181,74 @@ public class ManagerService {
         new Thread(parserServiceHator::updateImages).start();
     }
 
-    public void processApp() {
+    public synchronized void processApp() {
+        if(runIdCoreParser != -1) {
+            log.info("Threat processApp is running id: {}", runIdCoreParser);
+            return;
+        }
         new Thread(() -> {
-            while (true) {
                 try {
+                    runIdCoreParser = Thread.currentThread().getId();
+                    log.info("Current Thread Name: {} ", Thread.currentThread().getName());
+
+                    log.info("Current Thread ID: {}", Thread.currentThread().getId());
                     log.info("Start global process");
+
                     parserServiceSolaris.doProcess();
+
                     parserServiceKidigo.doProcess();
+
                     parserServiceRixo.doProcess();
+
                     parserServiceArmEco.doProcess();
                     parserServiceTechnostyle.doProcess();
                     parserServiceGrillex.doProcess();
                     parserServiceZapovit.doProcess();
+
                     parserServiceFrizel.doProcess();
+
                     parserServiceAnshar.doProcess();
+
                     parserServiceOscar.doProcess();
                     parserServiceCanadapech.doProcess();
+
                     parserServiceRP.doProcess();
+
                     parserServiceHator.doProcess();
                     parserServiceKirovogradvesy.doProcess();
+
                     parserServiceUhlmash.doProcess();
+
                     parserServiceTechsnab.doProcess();
                     parserServiceNoveen.doProcess();
                     parserServiceGoodfood.doProcess();
+
                     parserServiceArtinhead.doProcess();
+
                     parserServiceAstim.doProcess();
                     parserServiceMaresto.doProcess();
                     parserServiceKodaki.doProcess();
+
                     parserServiceNowystyl.doProcess();
+
                     parserServiceIndigowood.doProcess();
+
                     parserServiceSector.doProcess();
+
                     parserServiceTfb2b.doProcess();
+
                     parserServiceSiker.doProcess();
+
                     log.info("End global process");
-                    TimeUnit.HOURS.sleep(10);
+
+
+
+
                 } catch (Exception e) {
                     log.warn("Exception main process", e);
+                } finally {
+                    runIdCoreParser = -1;
                 }
-
-            }
         }).start();
         log.info("Threat is demon");
     }
@@ -341,7 +386,7 @@ public class ManagerService {
     }
 
     public void moveImagesToSupplierDir() {
-        String imageDirOC = FileService.imageDirOC;
+        String imageDirOC = fileService.getImageDirOc();
         String partPath = AppConstant.PART_DIR_OC_IMAGE;
         List<SupplierApp> supplierAppList = appDaoService.getAllSupplierApp();
         Set<Path> oldImageList = new HashSet<>();
@@ -421,4 +466,18 @@ public class ManagerService {
     }
 
 
+    public synchronized void updateFullDescription() {
+        new Thread(() -> {
+            try {
+                parserServiceUhlmash.updateDescription();
+            } catch (Exception ex) {
+                log.warn("Bad update description", ex);
+            }
+        }).start();
+
+    }
+
+    public void updateImages() {
+        parserServiceUhlmash.updateImage();
+    }
 }

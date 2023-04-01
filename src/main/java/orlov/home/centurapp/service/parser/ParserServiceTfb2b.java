@@ -21,6 +21,7 @@ import orlov.home.centurapp.entity.opencart.*;
 import orlov.home.centurapp.service.api.translate.TranslateService;
 import orlov.home.centurapp.service.appservice.FileService;
 import orlov.home.centurapp.service.appservice.ScraperDataUpdateService;
+import orlov.home.centurapp.service.appservice.UpdateDataService;
 import orlov.home.centurapp.service.daoservice.app.AppDaoService;
 import orlov.home.centurapp.service.daoservice.opencart.OpencartDaoService;
 import orlov.home.centurapp.service.daoservice.validator.HttpsUrlValidator;
@@ -51,13 +52,14 @@ public class ParserServiceTfb2b extends ParserServiceAbstract {
     private final AppDaoService appDaoService;
     private final OpencartDaoService opencartDaoService;
     private final TranslateService translateService;
+    private final UpdateDataService updateDataService;
 
-    public ParserServiceTfb2b(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService) {
+    public ParserServiceTfb2b(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, UpdateDataService updateDataService) {
         super(appDaoService, opencartDaoService, scraperDataUpdateService, translateService, fileService);
         this.appDaoService = appDaoService;
         this.opencartDaoService = opencartDaoService;
         this.translateService = translateService;
-
+        this.updateDataService = updateDataService;
     }
 
 
@@ -75,6 +77,10 @@ public class ParserServiceTfb2b extends ParserServiceAbstract {
             options.addArguments("--no-sandbox");
             options.addArguments("--disable-dev-shm-usage");
             options.addArguments("--window-size=1920x1080");
+            //Added by Unable to establish websocket connection
+            // to http://localhost:37582/devtools/browser/
+            //https://groups.google.com/g/chromedriver-users/c/xL5-13_qGaA?pli=1
+            options.addArguments("--remote-allow-origins=*");
 
             driver = new ChromeDriver(options);
             Dimension dm = new Dimension(1552, 849);
@@ -95,7 +101,11 @@ public class ParserServiceTfb2b extends ParserServiceAbstract {
 
             fullProductsData
                     .forEach(opencartDaoService::saveProductOpencart);
-
+            //:TODO update price in function checkPrice
+            /*
+            if(!opencartInfo.getNewProduct().isEmpty()) {
+                updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            }*/
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
             Timestamp end = new Timestamp(Calendar.getInstance().getTime().getTime());
@@ -104,7 +114,7 @@ public class ParserServiceTfb2b extends ParserServiceAbstract {
             orderProcessApp.setEndProcess(end);
             appDaoService.saveOrderDataApp(orderProcessApp);
         } catch (Exception ex) {
-            log.warn("Exception parsing nowystyle", ex);
+            log.warn("Exception parsing tfb2b", ex);
         } finally {
             try {
                 driver.close();
@@ -161,6 +171,8 @@ public class ParserServiceTfb2b extends ParserServiceAbstract {
                     }
                 })
                 .filter(Objects::nonNull)
+                //:TODO next line uncommitted only debug
+                //.findFirst().stream()
                 .collect(Collectors.toList());
 
 
@@ -316,8 +328,11 @@ public class ParserServiceTfb2b extends ParserServiceAbstract {
                                                 if (Objects.nonNull(mainImageElement)) {
                                                     String style = mainImageElement.getAttribute("style");
                                                     urlImage = SUPPLIER_PART_IMAGE_URL.concat(style.substring(style.indexOf("url(\"") + 5, style.indexOf("\");")));
+                                                    log.info("urlImage {}", urlImage);
                                                     String imageName = urlImage.substring(urlImage.lastIndexOf("/") + 1);
+                                                    log.info("imageName {}",imageName);
                                                     imageDB = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
+                                                    log.info("imageDB {}", imageDB);
                                                     downloadImage(urlImage, imageDB);
                                                     log.info("Image url: {}", urlImage);
                                                 }
@@ -458,6 +473,13 @@ public class ParserServiceTfb2b extends ParserServiceAbstract {
         List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
         List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
         List<ProductOpencart> fullProductsData = getFullProductsData(productsFromSite, supplierApp);
+        fullProductsData.stream().forEach( fp -> {
+            fp.getProductsDescriptionOpencart().stream().forEach( item -> {
+                //:TODO
+                    }
+
+            );
+        });
     }
 
     @Override
@@ -645,6 +667,7 @@ public class ParserServiceTfb2b extends ParserServiceAbstract {
 
     }
 
+
     public void updateDescription() {
 
         SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
@@ -671,6 +694,7 @@ public class ParserServiceTfb2b extends ParserServiceAbstract {
 
                         Document webDocument = getWebDocument(url, new HashMap<>());
                         String description = getDescription(webDocument);
+                        log.info("Product description: {}", description);
                         ProductDescriptionOpencart desc = new ProductDescriptionOpencart.Builder()
                                 .withProductId(id)
                                 .withLanguageId(OCConstant.UA_LANGUAGE_ID)

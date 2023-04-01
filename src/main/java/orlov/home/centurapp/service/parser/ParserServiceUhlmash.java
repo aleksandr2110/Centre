@@ -3,6 +3,7 @@ package orlov.home.centurapp.service.parser;
 
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import orlov.home.centurapp.dto.AttributeWrapper;
@@ -12,6 +13,7 @@ import orlov.home.centurapp.entity.opencart.*;
 import orlov.home.centurapp.service.api.translate.TranslateService;
 import orlov.home.centurapp.service.appservice.FileService;
 import orlov.home.centurapp.service.appservice.ScraperDataUpdateService;
+import orlov.home.centurapp.service.appservice.UpdateDataService;
 import orlov.home.centurapp.service.daoservice.app.AppDaoService;
 import orlov.home.centurapp.service.daoservice.opencart.OpencartDaoService;
 import orlov.home.centurapp.util.AppConstant;
@@ -39,11 +41,14 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
     private final OpencartDaoService opencartDaoService;
     private final TranslateService translateService;
 
-    public ParserServiceUhlmash(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService) {
+    private final UpdateDataService updateDataService;
+
+    public ParserServiceUhlmash(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, UpdateDataService updateDataService) {
         super(appDaoService, opencartDaoService, scraperDataUpdateService, translateService, fileService);
         this.appDaoService = appDaoService;
         this.opencartDaoService = opencartDaoService;
         this.translateService = translateService;
+        this.updateDataService = updateDataService;
     }
 
 
@@ -65,12 +70,17 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
             OpencartDto opencartInfo = getOpencartInfo(productsFromSite, supplierApp);
             checkPrice(opencartInfo, supplierApp);
 
+
             List<ProductOpencart> fullProductsData = getFullProductsData(opencartInfo.getNewProduct(), supplierApp);
 
 
             fullProductsData
                     .forEach(opencartDaoService::saveProductOpencart);
-
+            //:TODO update price in function checkPrice
+            /*
+            if(opencartInfo.getNewProduct() != null && !opencartInfo.getNewProduct().isEmpty()) {
+                updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            }*/
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
             Timestamp end = new Timestamp(Calendar.getInstance().getTime().getTime());
@@ -89,6 +99,10 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
         List<CategoryOpencart> siteCategories = getSiteCategories(supplierApp);
         List<ProductOpencart> productsFromSite = getProductsInitDataByCategory(siteCategories, supplierApp);
         getFullProductsData(productsFromSite, supplierApp);
+        //getFullProductsData(productsFromSite, supplierApp);
+        //List<ProductOpencart> fullProductsData = getFullProductsData(productsFromSite, supplierApp);
+        //fullProductsData
+        //        .forEach(opencartDaoService::saveProductOpencart);
     }
 
 
@@ -122,6 +136,8 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
                         return categoryOpencart;
                     })
                     .peek(c -> log.info("Name category: {}m url: {}", c.getDescriptions().get(0).getName(), c.getUrl()))
+                    //:TODO next line uncommitted only debug
+                    //.findFirst().stream()
                     .collect(Collectors.toList());
             log.info("Main category size: {}", mainCategories.size());
 
@@ -250,7 +266,8 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
                                             }
                                             log.info("Product sku: {}", sku);
 
-                                            Elements priceElement = ep.select("div.item-pr div.eco-in span");
+                                            //Elements priceElement = ep.select("div.item-pr div.eco-in span");
+                                            Elements priceElement = ep.select("div.item-pr");
                                             String price = "0.0";
 
                                             if (!priceElement.isEmpty()) {
@@ -258,7 +275,8 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
                                                 if (!discount.isEmpty()) {
                                                     discount.remove();
                                                 }
-                                                String textPrice = priceElement.text().replaceAll("\\D", "");
+
+                                                String textPrice = priceElement.get(0).childNodes().get(0).outerHtml().replaceAll("\\D", "");
                                                 if (!textPrice.isEmpty()) {
                                                     price = textPrice;
                                                 }
@@ -425,7 +443,8 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
                             p.getAttributesWrapper().addAll(attributes);
 
 
-                            Elements imagesElement = webDocument.select("div.one-min.product-item-detail-slider-controls-image");
+                            //Elements imagesElement = webDocument.select("div.one-min.product-item-detail-slider-controls-image");
+                            Elements imagesElement = webDocument.select("div.product-item-detail-slider div#product-slider ul.slides li");
                             log.info("imagesElement: {}", imagesElement.size());
 
                             if (imagesElement.size() > 0) {
@@ -434,8 +453,9 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
                                 List<ImageOpencart> productImages = imagesElement
                                         .stream()
                                         .map(ie -> {
-                                            String stringUrl = ie.select("img").attr("src").replaceAll("65_65_", "1920_1080_");
-                                            String url = SUPPLIER_PART_URL.concat(stringUrl);
+                                            //String stringUrl = ie.select("img").attr("src").replaceAll("65_65_", "1920_1080_");
+                                            String stringUrl = ie.select("img").attr("src");//.replaceAll("65_65_", "1920_1080_");
+                                            String url = SUPPLIER_PART_URL.concat("/").concat(stringUrl);
 
                                             String format = url.substring(url.lastIndexOf("."));
                                             String imageName = p.getModel().concat("_").concat(String.valueOf(countImage.addAndGet(1))).concat(format);
@@ -615,4 +635,89 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
                 });
     }
 
+    public void updateImage() {
+        Map<String, String> cookies = new HashMap<>();
+        cookies.put("language", "uk-ua");
+
+        SupplierApp supplierApp = buildSupplierApp(SUPPLIER_NAME, DISPLAY_NAME, SUPPLIER_URL);
+        List<ProductOpencart> productOpencartList = opencartDaoService.getAllProductOpencartBySupplierAppName(supplierApp.getName());
+        log.info("? product opencart size: {}", productOpencartList.size());
+        List<ProductProfileApp> productProfilesApp = supplierApp.getProductProfilesApp();
+        log.info("? product profile size: {}", productProfilesApp.size());
+        String name = supplierApp.getName();
+        log.info("Supplier name: {}", name);
+        productProfilesApp
+                .forEach(pp -> {
+                    String url = pp.getUrl();
+                    String sku = pp.getSku();
+
+                    ProductOpencart productOpencart = productOpencartList
+                            .stream()
+                            .filter(p -> p.getSku().equals(sku))
+                            .findFirst()
+                            .orElse(null);
+                    if (Objects.nonNull(productOpencart)) {
+                        int id = productOpencart.getId();
+                        String model = productOpencart.getModel();
+                        Document webDocument = getWebDocument(url, cookies);
+                        List<ImageOpencart> images = getImages(webDocument, model);
+                        /*
+                        String description = getDescription(webDocument);
+                        ProductDescriptionOpencart desc = new ProductDescriptionOpencart.Builder()
+                                .withProductId(id)
+                                .withLanguageId(OCConstant.UA_LANGUAGE_ID)
+                                .withDescription(description)
+                                .build();
+                        opencartDaoService.updateDescription(desc);
+                        */
+                        //opencartDaoService.update
+                        log.info("Product id: {}", id);
+                    } else {
+                        log.warn("Product is NULL: {}", sku);
+                    }
+
+                });
+
+    }
+    private List<ImageOpencart> getImages(Document document, String model) {
+        Elements imagesElement = document.select("div.product-item-detail-slider div#product-slider ul.slides li");
+        log.info("imagesElement: {}", imagesElement.size());
+
+        if (imagesElement.size() > 0) {
+
+            AtomicInteger countImage = new AtomicInteger();
+            List<ImageOpencart> productImages = imagesElement
+                    .stream()
+                    .map(ie -> {
+                        //String stringUrl = ie.select("img").attr("src").replaceAll("65_65_", "1920_1080_");
+                        String stringUrl = ie.select("img").attr("src");//.replaceAll("65_65_", "1920_1080_");
+                        String url = SUPPLIER_PART_URL.concat("/").concat(stringUrl);
+
+                        String format = url.substring(url.lastIndexOf("."));
+                        String imageName = model.concat("_").concat(String.valueOf(countImage.addAndGet(1))).concat(format);
+                        String dbImgPath = AppConstant.PART_DIR_OC_IMAGE.concat(DISPLAY_NAME.concat("/")).concat(imageName);
+                        log.info("image url: {}", url);
+                        log.info("image name: {}", imageName);
+                        log.info("dbImg path: {}", dbImgPath);
+                        downloadImage(url, dbImgPath);
+
+                        if (countImage.get() == 1) {
+                          //  p.setImage(dbImgPath);
+                            return null;
+                        }
+
+                        ImageOpencart imageOpencart = new ImageOpencart.Builder()
+                                .withImage(dbImgPath)
+                                .withSortOrder(countImage.get())
+                                .build();
+                        return imageOpencart;
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            return productImages;
+        } else {
+
+            return null;
+        }
+    }
 }
