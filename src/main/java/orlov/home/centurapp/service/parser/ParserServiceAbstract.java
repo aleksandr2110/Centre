@@ -913,6 +913,21 @@ public abstract class ParserServiceAbstract implements ParserService {
         return "<span class=\"centurapp\" style=\"white-space: pre-wrap; font-size: 16px; \">".concat(result).concat("</span>");
     }
 
+    public String wrapToHtmlTable(Elements tableRows) {
+        StringBuilder tableHtml = new StringBuilder("<table align=\"center\" border=\"1\" cellpadding=\"1\" cellspacing=\"1\">");
+        for (Element row : tableRows) {
+            Elements cells = row.select("td");
+            if (cells.size() == 2) {
+                String abbreviation = cells.get(0).text().trim();
+                String value = cells.get(1).text().trim();
+                String rowHtml = String.format("<tr><td style=\"text-align: center;\">%s</td><td td style=\"text-align: center;\"><a>%s</a></td></tr>", abbreviation, value);
+                tableHtml.append(rowHtml);
+            }
+        }
+        tableHtml.append("</table>");
+        return "<span class=\"centurapp-table\" style=\"white-space: pre-wrap; font-size: 16px; \">".concat(tableHtml.toString()).concat("</span>");
+    }
+
     public String wrapToHtml(String text, Elements lines) {
         String result = text.replaceAll("\n", "</br>");
         if (!lines.text().isEmpty()) {
