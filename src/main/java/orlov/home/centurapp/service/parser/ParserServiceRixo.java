@@ -75,7 +75,10 @@ public class ParserServiceRixo extends ParserServiceAbstract {
             List<ProductOpencart> newProduct = opencartInfo.getNewProduct();
 
             newProduct.forEach(opencartDaoService::saveProductOpencart);
-            updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            //:TODO update price in function checkPrice
+            if(!newProduct.isEmpty()) {
+                updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            }
 
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
@@ -121,6 +124,8 @@ public class ParserServiceRixo extends ParserServiceAbstract {
                         return categoryOpencart;
 
                     })
+                    //:TODO next line uncommitted only debug
+                    //.findFirst().stream()
                     .collect(Collectors.toList());
 
             log.info("Main category size: {}", mainCategories.size());

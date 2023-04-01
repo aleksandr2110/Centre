@@ -421,21 +421,26 @@ public abstract class ParserServiceAbstract implements ParserService {
                 .stream()
                 .filter(availableProducts::contains)
                 .filter(p -> {
-
+                    //p.getProductProfileApp().getPrice().setScale(4);
                     ProductOpencart availableProduct = availableProducts.get(availableProducts.indexOf(p));
                     ProductProfileApp newProductProfile = availableProduct.getProductProfileApp();
                     ProductProfileApp productProfileDB = getProductProfile(availableProduct.getProductProfileApp(), supplierApp);
+                    ProductOpencart productFromDb = opencartDaoService.getProductOpencartById(p.getId());
                     BigDecimal priceNEW = availableProduct.getPrice();
                     BigDecimal priceNOW = productProfileDB.getPrice();
-                    log.info("");
-                    boolean notEqualsPrice = !priceNEW.equals(priceNOW);
-                    log.info("Product SKU: {} with price: {} new: {} old: {}", p.getSku(), notEqualsPrice, priceNEW, priceNOW);
+                    BigDecimal priceDb = productFromDb.getItuaOriginalPrice().setScale(4);
+                    log.info("product id {}", p.getId());
+                    boolean notEqualsPrice = !priceNEW.equals(priceDb);
+                    log.info("checkPrice SupplierApp {} Product SKU: {} with price: {} new: {} old: {} fromDb {} url {}", supplierApp.getName(), p.getSku(), notEqualsPrice, priceNEW, priceNOW, priceDb, p.getUrlProduct());
 
                     if (notEqualsPrice) {
-                        log.info("UPDATED profile: \nNEW {}, \nOLD{}", priceNEW, priceNOW);
+                        log.info("checkPrice SupplierApp {} UPDATED profile: \nNEW {}, \nOLD{}", supplierApp.getName(), priceNEW, priceNOW);
                         productProfileDB.setPrice(priceNEW);
                         availableProduct.setProductProfileApp(productProfileDB);
+                        p.setItuaOriginalPrice(priceNEW);
                         setPriceWithMarkup(availableProduct);
+
+                        log.info("checkPrice SupplierApp {} setPriceWithMarkup(availableProduct) {}", supplierApp.getName(), availableProduct);
 
                         appDaoService.updateProductProfileApp(productProfileDB);
                         newPriceProductAppList.add(new ProductApp.Builder()
@@ -443,11 +448,13 @@ public abstract class ParserServiceAbstract implements ParserService {
                                 .withUrl(Objects.isNull(availableProduct.getUrlProduct()) ? "" : availableProduct.getUrlProduct())
                                 .withStatus("price")
                                 .withNewPrice(priceNEW)
-                                .withOldPrice(priceNOW)
+                                .withOldPrice(priceDb)
                                 .build());
 
-                        p.setPrice(availableProduct.getPrice());
-                        p.setItuaOriginalPrice(availableProduct.getPrice());
+                        //p.setPrice(availableProduct.getPrice());
+                        //p.setItuaOriginalPrice(priceNEW);
+                        //int markup = availableProduct.getProductProfileApp().getSupplierApp().getMarkup();
+                        //updateOriginalPriceWithMarkup(p, markup);
                     }
                     return notEqualsPrice;
                 })
@@ -456,8 +463,8 @@ public abstract class ParserServiceAbstract implements ParserService {
 
         newPriceProducts
                 .forEach(opencartDaoService::updatePriceProductOpencart);
-        log.info("New price products count: {}", newPriceProducts.size());
-        newPriceProducts.forEach(p -> log.debug("new price product: {}", p));
+        log.info("checkPrice SupplierApp {} New price products count: {}", supplierApp.getName(),  newPriceProducts.size());
+        newPriceProducts.forEach(p -> log.debug("checkPrice new price product: {}", p));
         opencartInfo.getOrderProcessApp().setNewPriceProduct(newPriceProductAppList);
     }
 
@@ -774,11 +781,24 @@ public abstract class ParserServiceAbstract implements ParserService {
         againAvailableProducts
                 .forEach(opencartDaoService::updateStatusProductOpencart);
 
+        List<ProductOpencart> oldProducts = new ArrayList<>();
+        productFromSite.forEach(item -> {
+            log.info("getOpencartInfo SupplierApp {} Product from site : {}",supplierApp.getName(), item);
+        });
+        productsDBList
+                .forEach(item -> {
+                    log.info("getOpencartInfo SupplierApp {} Product from db : {}",supplierApp.getName(), item);
+                    log.info("getOpencartInfo SupplierApp {} productFromSite.contains : {}",supplierApp.getName(), productFromSite.contains(item));
+                });
+        //:TODO тимчасово СТАРТ
+        /*
         List<ProductOpencart> oldProducts = productsDBList
                 .stream()
                 .filter(p -> !productFromSite.contains(p))
                 .peek(p -> opencartDaoService.deleteFullProductDataById(p.getId()))
                 .collect(Collectors.toList());
+        */
+        //:TODO тимчасово КІНЕЦЬ
         log.info("Old products count: {}", oldProducts.size());
 
         List<ProductApp> oldProductAppList = oldProducts
@@ -818,18 +838,21 @@ public abstract class ParserServiceAbstract implements ParserService {
                 markupManufacturer : markupCategory != 0 ?
                 markupCategory : markupSupplier;
 
-        log.info("MS: {}, MM: {}", markupSupplier, markupManufacturer);
+        log.info("setPriceWithMarkup MS: {}, MM: {}", markupSupplier, markupManufacturer);
 
-        BigDecimal price = product.getPrice();
+        BigDecimal price = product.getItuaOriginalPrice();
 
         double m = markupInt;
         double d = 1 + m / 100;
         BigDecimal markup = new BigDecimal(String.valueOf(d));
         BigDecimal lastPrice = price.multiply(markup).setScale(2, RoundingMode.UP).setScale(4);
         product.setPrice(lastPrice);
-        product.setItuaOriginalPrice(lastPrice);
+        //:TODO original price with not update ?
+        //product.setItuaOriginalPrice(lastPrice);
+        // Save new price from supplier
+        product.setPrice(lastPrice);
         setOptionPriceWithMarkup(product);
-        log.info("sku: {} actual product price: {}", product.getSku(), lastPrice);
+        log.info("setPriceWithMarkup sku: {} actual product from supplier {} price: {}", product.getSku(), price, lastPrice);
         return product;
     }
 
@@ -843,7 +866,7 @@ public abstract class ParserServiceAbstract implements ParserService {
                 markupManufacturer : markupCategory != 0 ?
                 markupCategory : markupSupplier;
 
-        log.info("MS: {}, MM: {}", markupSupplier, markupManufacturer);
+        log.info("setOptionPriceWithMarkup MS: {}, MM: {}", markupSupplier, markupManufacturer);
 
 
         List<OptionApp> optionsApp = productProfileApp.getOptions();

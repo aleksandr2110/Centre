@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class ImageService {
 
+    private final FileService fileService;
 
     public String createOptionImage(String hexColor) {
         int width = 26;
@@ -31,7 +32,7 @@ public class ImageService {
         String fileName = hexColor.replaceAll("#", "").concat("." + imageFormat);
         log.info("File name: {}", fileName);
 
-        Path path = Paths.get(FileService.imageDirOC.concat(AppConstant.PART_DIR_OC_IMAGE.concat(fileName)));
+        Path path = Paths.get(fileService.getImageDirOc().concat(AppConstant.PART_DIR_OC_IMAGE.concat(fileName)));
         log.info("Path : {}", path);
 
         String dbImagePath = AppConstant.PART_DIR_OC_IMAGE.concat(fileName);
@@ -72,7 +73,7 @@ public class ImageService {
         int height = 26;
 
 
-        Path path = Paths.get(FileService.imageDirOC.concat(AppConstant.PART_DIR_OC_IMAGE.concat(fileName)));
+        Path path = Paths.get(fileService.getImageDirOc().concat(AppConstant.PART_DIR_OC_IMAGE.concat(fileName)));
         log.info("Path : {}", path);
 
         String dbImagePath = AppConstant.PART_DIR_OC_IMAGE.concat(fileName);
@@ -86,7 +87,7 @@ public class ImageService {
                     .stream()
                     .map(i -> {
                         try {
-                            Path pathGallery = Paths.get(FileService.imageDirOC.concat(AppConstant.PART_DIR_OC_IMAGE.concat(i)));
+                            Path pathGallery = Paths.get(fileService.getImageDirOc().concat(AppConstant.PART_DIR_OC_IMAGE.concat(i)));
                             BufferedImage galleryImage = ImageIO.read(new File(pathGallery.toString()));
                             return galleryImage;
                         } catch (Exception ee) {

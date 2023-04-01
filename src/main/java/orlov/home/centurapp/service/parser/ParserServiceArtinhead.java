@@ -79,11 +79,12 @@ public class ParserServiceArtinhead extends ParserServiceAbstract {
 
             List<ProductOpencart> newProduct = opencartInfo.getNewProduct();
 
-            newProduct.forEach(np -> {
-                opencartDaoService.saveProductOpencart(np);
-            });
+            newProduct.forEach(opencartDaoService::saveProductOpencart);
 
-            updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            //:TODO update price in function checkPrice
+            if(!newProduct.isEmpty()) {
+                updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            }
 
 
             updateProductSupplierOpencartBySupplierApp(supplierApp);
@@ -489,6 +490,8 @@ public class ParserServiceArtinhead extends ParserServiceAbstract {
                         categoryOpencart.getDescriptions().add(description);
                         return categoryOpencart;
                     })
+                    //:TODO next line uncommitted only debug
+                    //.findFirst().stream()
                     .collect(Collectors.toList());
             log.info("Main category size: {}", mainCategories.size());
 

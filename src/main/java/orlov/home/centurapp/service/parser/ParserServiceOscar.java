@@ -22,6 +22,7 @@ import orlov.home.centurapp.entity.opencart.*;
 import orlov.home.centurapp.service.api.translate.TranslateService;
 import orlov.home.centurapp.service.appservice.FileService;
 import orlov.home.centurapp.service.appservice.ScraperDataUpdateService;
+import orlov.home.centurapp.service.appservice.UpdateDataService;
 import orlov.home.centurapp.service.daoservice.app.AppDaoService;
 import orlov.home.centurapp.service.daoservice.opencart.OpencartDaoService;
 import orlov.home.centurapp.util.AppConstant;
@@ -50,11 +51,14 @@ public class ParserServiceOscar extends ParserServiceAbstract {
     private final OpencartDaoService opencartDaoService;
     private final TranslateService translateService;
 
-    public ParserServiceOscar(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService) {
+    private final UpdateDataService updateDataService;
+
+    public ParserServiceOscar(AppDaoService appDaoService, OpencartDaoService opencartDaoService, ScraperDataUpdateService scraperDataUpdateService, TranslateService translateService, FileService fileService, UpdateDataService updateDataService) {
         super(appDaoService, opencartDaoService, scraperDataUpdateService, translateService, fileService);
         this.appDaoService = appDaoService;
         this.opencartDaoService = opencartDaoService;
         this.translateService = translateService;
+        this.updateDataService = updateDataService;
     }
 
 
@@ -80,7 +84,11 @@ public class ParserServiceOscar extends ParserServiceAbstract {
 
             fullProductsData
                     .forEach(opencartDaoService::saveProductOpencart);
-
+            //:TODO update price in function checkPrice
+            /*
+            if(!opencartInfo.getNewProduct().isEmpty()) {
+                updateDataService.updatePrice(supplierApp.getSupplierAppId());
+            }*/
             updateProductSupplierOpencartBySupplierApp(supplierApp);
 
             Timestamp end = new Timestamp(Calendar.getInstance().getTime().getTime());
@@ -130,6 +138,8 @@ public class ParserServiceOscar extends ParserServiceAbstract {
                         return categoryOpencart;
                     })
                     .peek(c -> log.info("url category: {}", c.getUrl()))
+                    //:TODO next line uncommitted only debug
+                    //.findFirst().stream()
                     .collect(Collectors.toList());
             log.info("Main category size: {}", mainCategories.size());
 
