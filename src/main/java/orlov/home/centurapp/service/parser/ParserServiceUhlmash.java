@@ -539,7 +539,7 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
                     if (Objects.nonNull(productOpencart)) {
                         int id = productOpencart.getId();
                         Document webDocument = getWebDocument(url, cookies);
-                        String description = getDescription(webDocument);
+                        String description = getDescription(webDocument);//
                         ProductDescriptionOpencart desc = new ProductDescriptionOpencart.Builder()
                                 .withProductId(id)
                                 .withLanguageId(OCConstant.UA_LANGUAGE_ID)
@@ -558,9 +558,22 @@ public class ParserServiceUhlmash extends ParserServiceAbstract {
         Elements descElement = doc.select("div#det_description");
         Elements titleDesc = descElement.select("h2.desc-prod-tit");
         titleDesc.remove();
+
+        Elements tableRows = descElement.select("table > tbody > tr");
+        String table = tableRows.size() > 0 ? getTableFromDescription(tableRows) : "";
+        tableRows.remove();
+
         String description = descElement.size() > 0 ? cleanDescription(descElement.get(0)) : "";
         log.info("Description UA text: {}", description);
-        return wrapToHtml(description);
+        String wrappedToHtml = wrapToHtml(description);
+
+        table += wrappedToHtml;
+
+        return table;
+    }
+
+    public String getTableFromDescription(Elements tableRows) {
+        return wrapToHtmlTable(tableRows);
     }
 
     @Override
